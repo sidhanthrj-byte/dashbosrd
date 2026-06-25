@@ -31,9 +31,10 @@ export async function GET(req: NextRequest) {
   if (priority && priority !== 'all') { sql += ' AND priority = ?'; params.push(priority); }
   if (phoneFilter === 'has_phone') { sql += ' AND phone IS NOT NULL'; }
   else if (phoneFilter === 'no_contact') { sql += ' AND phone IS NULL AND phone_fetched = 1'; }
+  else if (phoneFilter === 'not_fetched') { sql += ' AND phone IS NULL AND phone_fetched = 0'; }
 
   const ORDER: Record<string, string> = {
-    priority: "CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC, updated_at DESC",
+    priority: "CASE WHEN phone IS NOT NULL THEN 0 ELSE 1 END ASC, CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC, CASE WHEN next_action_date <= date('now') THEN 0 ELSE 1 END ASC, updated_at DESC",
     recent:   'updated_at DESC',
     followup: 'next_action_date ASC',
     name:     'contact_name ASC',

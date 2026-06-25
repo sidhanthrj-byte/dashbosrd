@@ -12,7 +12,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const lead = await queryOne<Lead>('SELECT * FROM leads WHERE id = ? AND user_id = ?', [id, session.userId]);
   if (!lead) return new Response('Not found', { status: 404 });
 
-  const followDate = lead.next_action_date || new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const followDate = lead.next_action_date || tomorrow.toISOString().split('T')[0];
   const dtStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   const dtStart = followDate.replace(/-/g, '') + 'T090000';
   const dtEnd = followDate.replace(/-/g, '') + 'T093000';

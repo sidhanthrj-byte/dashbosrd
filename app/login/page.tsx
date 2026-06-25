@@ -8,6 +8,7 @@ const CITIES = [
   { value: 'Bangalore', emoji: '🌿', sub: 'Karnataka' },
   { value: 'Chennai', emoji: '🌊', sub: 'Tamil Nadu' },
   { value: 'Pune', emoji: '🏔️', sub: 'Maharashtra' },
+  { value: 'Hyderabad', emoji: '🏯', sub: 'Telangana' },
 ];
 
 export default function LoginPage() {
@@ -189,7 +190,7 @@ export default function LoginPage() {
                 {/* City selector */}
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-2">Your City</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-2 gap-2">
                     {CITIES.map(c => (
                       <button
                         key={c.value}

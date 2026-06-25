@@ -7,6 +7,7 @@ const CITY_LOCATIONS: Record<string, string> = {
   Bangalore: 'Bangalore, Karnataka, India',
   Chennai:   'Chennai, Tamil Nadu, India',
   Pune:      'Pune, Maharashtra, India',
+  Hyderabad: 'Hyderabad, Telangana, India',
 };
 
 const TITLES = [

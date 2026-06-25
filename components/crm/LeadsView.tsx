@@ -5,7 +5,7 @@ import { Lead } from '@/lib/db';
 import { LeadCard } from './LeadCard';
 import { StatsBar } from './StatsBar';
 import { STATUS_CONFIG } from '@/lib/next-steps';
-import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2, Phone, PhoneOff } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2, Phone, PhoneOff, PhoneCall } from 'lucide-react';
 import { AddLeadModal } from './AddLeadModal';
 import { toast } from 'sonner';
 
@@ -38,6 +38,8 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [generateCount, setGenerateCount] = useState(10);
   const [generateArea, setGenerateArea] = useState('');
   const [showGeneratePanel, setShowGeneratePanel] = useState(false);
+  const [batchLookupRunning, setBatchLookupRunning] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number; found: number } | null>(null);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -108,6 +110,55 @@ export function LeadsView({ onNavigateToday }: Props) {
     }
   }
 
+  async function batchFindPhones() {
+    if (batchLookupRunning) return;
+    setBatchLookupRunning(true);
+    setBatchProgress({ done: 0, total: 0, found: 0 });
+    try {
+      // Fetch all leads that haven't been looked up yet
+      const res = await fetch('/api/leads?phone_filter=not_fetched');
+      if (!res.ok) { toast.error('Failed to fetch leads'); return; }
+      const data = await res.json();
+      const unfetched: Lead[] = Array.isArray(data.leads) ? data.leads : [];
+      if (unfetched.length === 0) { toast.info('All leads have already been looked up!'); return; }
+
+      let found = 0;
+      setBatchProgress({ done: 0, total: unfetched.length, found: 0 });
+
+      for (let i = 0; i < unfetched.length; i++) {
+        const lead = unfetched[i];
+        try {
+          const lookupRes = await fetch('/api/contact-lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId: lead.id,
+              linkedinUrl: lead.linkedin_url,
+              name: lead.contact_name,
+              company: lead.company_name,
+              email: lead.email,
+            }),
+          });
+          const lookupData = await lookupRes.json();
+          if (lookupRes.ok && (lookupData.phone || lookupData.email)) {
+            found++;
+            handleLeadUpdate({ ...lead, phone: lookupData.phone || lead.phone, email: lookupData.email || lead.email, phone_fetched: 1 });
+          }
+        } catch {
+          // continue with next lead
+        }
+        setBatchProgress({ done: i + 1, total: unfetched.length, found });
+      }
+
+      toast.success(`Batch lookup done! Found ${found} phone numbers out of ${unfetched.length} leads.`);
+    } catch {
+      toast.error('Batch lookup failed');
+    } finally {
+      setBatchLookupRunning(false);
+      setBatchProgress(null);
+    }
+  }
+
   function clearFilters() {
     setSearch(''); setStatusFilter('all'); setPriorityFilter('all'); setSort('priority');
   }
@@ -173,6 +224,13 @@ export function LeadsView({ onNavigateToday }: Props) {
             disabled={generating}
             className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 text-white transition-colors flex items-center justify-center shrink-0 disabled:opacity-50">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={batchFindPhones}
+            disabled={batchLookupRunning}
+            title="Find all phone numbers"
+            className="w-9 h-9 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white transition-colors flex items-center justify-center shrink-0 disabled:opacity-50">
+            {batchLookupRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4" />}
           </button>
           <button onClick={exportCSV} title="Export CSV"
             className="w-9 h-9 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center shrink-0">
@@ -270,9 +328,9 @@ export function LeadsView({ onNavigateToday }: Props) {
         {/* Count row */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground">
-            {loading ? 'Loading...' : generating ? 'Fetching from Apollo...' : `${leads.length} lead${leads.length !== 1 ? 's' : ''}${phoneTab === 'no_contact' ? ' without phone' : phoneTab === 'has_phone' ? ' with phone' : ''}`}
+            {loading ? 'Loading...' : generating ? 'Fetching from Apollo...' : batchLookupRunning && batchProgress ? `Finding phones... ${batchProgress.done}/${batchProgress.total} (${batchProgress.found} found)` : `${leads.length} lead${leads.length !== 1 ? 's' : ''}${phoneTab === 'no_contact' ? ' without phone' : phoneTab === 'has_phone' ? ' with phone' : ''}`}
           </span>
-          {phoneTab === 'no_contact' && leads.length > 0 && (
+          {phoneTab === 'no_contact' && leads.length > 0 && !batchLookupRunning && (
             <span className="text-[11px] text-orange-400">Tap &quot;Replace&quot; to swap for a fresh lead</span>
           )}
         </div>

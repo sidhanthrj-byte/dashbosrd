@@ -5,10 +5,13 @@ export function getWhatsAppUrl(
   status: string,
   projectType?: string | null
 ): string {
+  const message = getTemplate(status, name.split(' ')[0], company, projectType);
+  if (!phone || phone === '0') {
+    // No phone — return compose URL (WhatsApp will prompt user to pick contact)
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  }
   const cleaned = phone.replace(/\D/g, '');
   const withCode = cleaned.startsWith('91') && cleaned.length >= 12 ? cleaned : `91${cleaned}`;
-  const firstName = name.split(' ')[0];
-  const message = getTemplate(status, firstName, company, projectType);
   return `https://wa.me/${withCode}?text=${encodeURIComponent(message)}`;
 }
 

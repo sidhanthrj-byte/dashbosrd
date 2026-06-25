@@ -161,11 +161,27 @@ const PUNE_LEADS = [
   { company_name: 'Space Craft Architects', contact_name: 'Mangesh Joshi', contact_title: 'Principal', city: 'Pune', state: 'Maharashtra', area: 'Hadapsar', email: 'info@spacecraftarchitects.com', linkedin_url: null, priority: 'low', project_type: 'Affordable Housing' },
 ];
 
+const HYDERABAD_LEADS = [
+  { company_name: 'SNS Architects', contact_name: 'Ravi Shankar Reddy', contact_title: 'Principal Architect', city: 'Hyderabad', state: 'Telangana', area: 'Banjara Hills', email: 'info@snsarchitects.com', linkedin_url: null, priority: 'high', project_type: 'Luxury Residential' },
+  { company_name: 'Morphogenesis Hyderabad', contact_name: 'Ananya Mehta', contact_title: 'Director', city: 'Hyderabad', state: 'Telangana', area: 'Jubilee Hills', email: 'hyd@morphogenesis.org', linkedin_url: null, priority: 'high', project_type: 'Mixed-use' },
+  { company_name: 'Spacematters Architecture', contact_name: 'Kiran Venkat', contact_title: 'Founding Partner', city: 'Hyderabad', state: 'Telangana', area: 'Gachibowli', email: 'studio@spacematters.in', linkedin_url: null, priority: 'high', project_type: 'Corporate & IT Parks' },
+  { company_name: 'Mold Architects', contact_name: 'Priya Reddy', contact_title: 'Principal Architect', city: 'Hyderabad', state: 'Telangana', area: 'Kondapur', email: 'info@moldarchitects.com', linkedin_url: null, priority: 'medium', project_type: 'Residential & Commercial' },
+  { company_name: 'Cadence Architects Hyderabad', contact_name: 'Sathya Prakash', contact_title: 'Principal', city: 'Hyderabad', state: 'Telangana', area: 'Madhapur', email: 'hyd@cadencearchitects.in', linkedin_url: null, priority: 'high', project_type: 'Luxury Residential & Hospitality' },
+  { company_name: 'Hitech Design Studio', contact_name: 'Venkata Ramana', contact_title: 'Design Director', city: 'Hyderabad', state: 'Telangana', area: 'Hitech City', email: 'info@hitechdesignstudio.com', linkedin_url: null, priority: 'medium', project_type: 'Tech Parks & Offices' },
+  { company_name: 'Arthaspace Architects', contact_name: 'Deepika Nair', contact_title: 'Co-Founder', city: 'Hyderabad', state: 'Telangana', area: 'Kukatpally', email: 'studio@arthaspace.in', linkedin_url: null, priority: 'medium', project_type: 'Affordable Housing' },
+  { company_name: 'Deccan Architects', contact_name: 'Suresh Babu Rao', contact_title: 'Managing Director', city: 'Hyderabad', state: 'Telangana', area: 'Begumpet', email: 'info@deccanarchitects.com', linkedin_url: null, priority: 'high', project_type: 'Commercial & Retail' },
+  { company_name: 'Studio Symbiosis Hyderabad', contact_name: 'Rahul Deshpande', contact_title: 'Principal', city: 'Hyderabad', state: 'Telangana', area: 'Ameerpet', email: 'hyd@studiosymbiosis.com', linkedin_url: null, priority: 'medium', project_type: 'Mixed-use Developments' },
+  { company_name: 'Vastushilpa Consultants', contact_name: 'Lakshmi Prasad', contact_title: 'Chief Architect', city: 'Hyderabad', state: 'Telangana', area: 'Banjara Hills', email: 'info@vastushilpa.com', linkedin_url: null, priority: 'high', project_type: 'Luxury Villas & Bungalows' },
+  { company_name: 'Form Follows Function', contact_name: 'Aditya Krishnamurthy', contact_title: 'Founder', city: 'Hyderabad', state: 'Telangana', area: 'Jubilee Hills', email: 'hello@fff-architects.com', linkedin_url: null, priority: 'medium', project_type: 'Boutique Residential' },
+  { company_name: 'Tetra Architects', contact_name: 'Swathi Rao', contact_title: 'Senior Architect', city: 'Hyderabad', state: 'Telangana', area: 'Gachibowli', email: 'info@tetraarchitects.in', linkedin_url: null, priority: 'low', project_type: 'Sustainable Design' },
+];
+
 const CITY_LEADS: Record<string, typeof MUMBAI_LEADS> = {
   Mumbai: MUMBAI_LEADS,
   Bangalore: BANGALORE_LEADS,
   Chennai: CHENNAI_LEADS,
   Pune: PUNE_LEADS,
+  Hyderabad: HYDERABAD_LEADS,
 };
 
 export async function seedLeadsForUser(userId: number, city: string): Promise<void> {

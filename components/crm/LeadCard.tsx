@@ -6,18 +6,19 @@ import { NextStep } from '@/lib/next-steps';
 import { StatusBadge } from './StatusBadge';
 import { UpdateLeadModal } from './UpdateLeadModal';
 import { NextStepsPanel } from './NextStepsPanel';
+import { PostCallModal } from './PostCallModal';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
 import {
   MapPin, Phone, Mail, Link2, Calendar, ChevronDown,
   Edit3, ExternalLink, MessageCircle, Bell, IndianRupee,
-  Search, Loader2, UserX, RefreshCw, Star,
+  Search, Loader2, UserX, RefreshCw, Star, Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Props = {
   lead: Lead;
   onUpdate: (lead: Lead) => void;
-  onReplace?: (archivedId: number, newLead: Lead) => void;
+  onReplace?: (archivedId: number, newLead: Lead | null) => void;
   compact?: boolean;
 };
 
@@ -51,24 +52,33 @@ function isOverdue(d: string) {
   return new Date(d) < new Date(new Date().toDateString());
 }
 
+function tomorrowStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
 type LookupState = 'idle' | 'loading' | 'found' | 'not-found';
 
 export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = false }: Props) {
   const [lead, setLead] = useState(initialLead);
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showPostCall, setShowPostCall] = useState(false);
   const [lookupState, setLookupState] = useState<LookupState>(
     initialLead.phone ? 'found' : initialLead.phone_fetched ? 'not-found' : 'idle'
   );
+  const [manualPhone, setManualPhone] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
   const [replacing, setReplacing] = useState(false);
   const [nextSteps, setNextSteps] = useState<NextStep[]>(() => {
     try { return lead.ai_next_steps ? JSON.parse(lead.ai_next_steps) : []; }
     catch { return []; }
   });
 
-  function handleUpdated(updated: Lead, steps: NextStep[]) {
+  function handleUpdated(updated: Lead, steps?: NextStep[]) {
     setLead(updated);
-    setNextSteps(steps);
+    if (steps) setNextSteps(steps);
     setExpanded(true);
     onUpdate(updated);
   }
@@ -90,21 +100,47 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Lookup failed'); setLookupState('idle'); return; }
-
       if (data.phone || data.email) {
-        toast.success(`Found contact info!`);
+        toast.success(`Found: ${data.phone || data.email}`);
         setLookupState('found');
-        setLead(prev => ({ ...prev, phone: data.phone || prev.phone, email: data.email || prev.email, phone_fetched: 1 }));
-        onUpdate({ ...lead, phone: data.phone || lead.phone, email: data.email || lead.email, phone_fetched: 1 });
+        const updated = { ...lead, phone: data.phone || lead.phone, email: data.email || lead.email, phone_fetched: 1 };
+        setLead(updated);
+        onUpdate(updated);
       } else {
-        toast.info('No phone number found in Apollo for this contact.');
+        toast.info('Not found in Apollo — enter number manually below');
         setLookupState('not-found');
-        setLead(prev => ({ ...prev, phone_fetched: 1 }));
-        onUpdate({ ...lead, phone_fetched: 1 });
+        const updated = { ...lead, phone_fetched: 1 };
+        setLead(updated);
+        onUpdate(updated);
+        setExpanded(true); // auto-expand to show manual entry
       }
     } catch (err) {
       toast.error('Lookup failed: ' + String(err));
       setLookupState('idle');
+    }
+  }
+
+  async function saveManualPhone(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!manualPhone.trim()) return;
+    setSavingPhone(true);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: manualPhone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success('Phone saved!');
+      setLead(data.lead);
+      setLookupState('found');
+      setManualPhone('');
+      onUpdate(data.lead);
+    } catch (err) {
+      toast.error('Failed to save: ' + String(err));
+    } finally {
+      setSavingPhone(false);
     }
   }
 
@@ -119,19 +155,18 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
         body: JSON.stringify({ count: 1, replace_lead_id: lead.id, page: Math.floor(Math.random() * 5) + 1 }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Failed to replace lead'); setReplacing(false); return; }
+      if (!res.ok) { toast.error(data.error || 'Failed'); setReplacing(false); return; }
       if (data.added > 0 && data.leads[0]) {
-        toast.success('Lead replaced with a fresh one from Apollo!');
+        toast.success('Swapped for a fresh lead!');
         onReplace?.(lead.id, data.leads[0]);
       } else {
-        // Archive only, no replacement found
         await fetch(`/api/leads/${lead.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ archived: 1 }),
         });
-        toast.info('Lead archived. No new leads available right now.');
-        onReplace?.(lead.id, null as unknown as Lead);
+        toast.info('Lead archived. No replacements available right now.');
+        onReplace?.(lead.id, null);
       }
     } catch {
       toast.error('Failed to replace lead');
@@ -139,28 +174,38 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
     }
   }
 
+  // Calendar ICS link — always available, defaults to tomorrow if no date
+  const calendarUrl = `/api/calendar/${lead.id}`;
+
+  // WhatsApp — always available
+  // With phone: direct WA link. Without phone: WA compose link (user picks contact)
+  const waMessage = getWhatsAppUrl(lead.phone || '0', lead.contact_name, lead.company_name, lead.status, lead.project_type);
+  const waUrl = lead.phone
+    ? waMessage
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(waMessage.split('text=')[1] || '')}`;
+
   const overdue = lead.next_action_date && isOverdue(lead.next_action_date)
     && !['converted', 'not_interested'].includes(lead.status);
-  const waUrl = lead.phone
-    ? getWhatsAppUrl(lead.phone, lead.contact_name, lead.company_name, lead.status, lead.project_type)
-    : null;
   const tier = TIER[lead.priority] || TIER.medium;
 
-  // Compact action button for collapsed state
+  // Suppress unused var warning
+  void tomorrowStr;
+
   function ActionButton() {
     if (lead.phone) {
       return (
-        <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()}
-          className="flex items-center gap-1.5 h-9 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shrink-0 transition-colors">
+        <button
+          onClick={e => { e.stopPropagation(); setShowPostCall(true); }}
+          className="flex items-center gap-1.5 h-9 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shrink-0 transition-colors active:scale-95">
           <Phone className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Call</span>
-        </a>
+          <span>Call</span>
+        </button>
       );
     }
     if (lookupState === 'loading') {
       return (
         <span className="flex items-center gap-1.5 h-9 px-3 bg-secondary border border-border rounded-xl text-xs text-muted-foreground shrink-0">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching...
         </span>
       );
     }
@@ -173,10 +218,9 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
         </button>
       );
     }
-    // idle — not yet looked up
     return (
       <button onClick={handleLookup}
-        className="flex items-center gap-1.5 h-9 px-2.5 bg-violet-500/10 border border-violet-500/30 text-violet-300 hover:bg-violet-500/20 rounded-xl text-xs font-semibold shrink-0 transition-colors">
+        className="flex items-center gap-1.5 h-9 px-2.5 bg-violet-500/10 border border-violet-500/30 text-violet-300 hover:bg-violet-500/20 rounded-xl text-xs font-semibold shrink-0 transition-colors active:scale-95">
         <Search className="w-3.5 h-3.5" />
         <span>Find #</span>
       </button>
@@ -184,162 +228,162 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
   }
 
   return (
-    <div className={`bg-card border rounded-xl overflow-hidden transition-all hover:shadow-md hover:shadow-black/20 active:scale-[0.995]
-      ${overdue ? 'border-l-2 border-l-orange-500/70 border-border' : 'border-border'}`}>
-      {/* Priority bar */}
-      <div className={`h-0.5 w-full bg-gradient-to-r ${PRIORITY_BAR[lead.priority] || PRIORITY_BAR.medium}`} />
+    <>
+      <div className={`bg-card border rounded-xl overflow-hidden transition-all hover:shadow-md hover:shadow-black/20 active:scale-[0.995]
+        ${overdue ? 'border-l-2 border-l-orange-500/70 border-border' : 'border-border'}`}>
+        <div className={`h-0.5 w-full bg-gradient-to-r ${PRIORITY_BAR[lead.priority] || PRIORITY_BAR.medium}`} />
 
-      {/* Collapsed row — always visible, tap to expand */}
-      <div className="px-3 pt-3 pb-2.5 cursor-pointer" onClick={() => setExpanded(!expanded)}>
-        <div className="flex items-center gap-2.5">
-          {/* Avatar */}
-          <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_BG[lead.priority] || AVATAR_BG.medium} flex items-center justify-center text-white font-bold text-xs shrink-0 border border-white/10`}>
-            {initials(lead.contact_name)}
-          </div>
+        {/* Collapsed row */}
+        <div className="px-3 pt-3 pb-2.5 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_BG[lead.priority] || AVATAR_BG.medium} flex items-center justify-center text-white font-bold text-xs shrink-0 border border-white/10`}>
+              {initials(lead.contact_name)}
+            </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-semibold text-foreground text-sm leading-tight">{lead.contact_name}</span>
-              <StatusBadge status={lead.status} />
-              <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${tier.color}`}>
-                <Star className="w-2 h-2" /> {tier.label}
-              </span>
-              {overdue && (
-                <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 rounded-full">
-                  OVERDUE
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-semibold text-foreground text-sm leading-tight">{lead.contact_name}</span>
+                <StatusBadge status={lead.status} />
+                <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${tier.color}`}>
+                  <Star className="w-2 h-2" /> {tier.label}
                 </span>
-              )}
+                {overdue && (
+                  <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 rounded-full">OVERDUE</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <span className="text-xs text-foreground/70 font-medium truncate max-w-[120px]">{lead.company_name}</span>
+                {lead.area && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{lead.area}</span>
+                  </>
+                )}
+                {lead.next_action_date && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className={`text-xs flex items-center gap-0.5 ${overdue ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                      <Calendar className="w-2.5 h-2.5" />{overdue ? 'Due ' : ''}{formatDate(lead.next_action_date)}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-              <span className="text-xs text-foreground/70 font-medium truncate">{lead.company_name}</span>
-              {lead.area && (
-                <>
-                  <span className="text-border">·</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                    <MapPin className="w-2.5 h-2.5" />{lead.area}
-                  </span>
-                </>
-              )}
-              {lead.next_action_date && (
-                <>
-                  <span className="text-border">·</span>
-                  <span className={`text-xs flex items-center gap-0.5 ${overdue ? 'text-orange-400' : 'text-muted-foreground'}`}>
-                    <Calendar className="w-2.5 h-2.5" />
-                    {overdue ? 'Due ' : ''}{formatDate(lead.next_action_date)}
-                  </span>
-                </>
-              )}
-            </div>
+
+            <ActionButton />
+
+            <button onClick={e => { e.stopPropagation(); setExpanded(!expanded); }}
+              className="w-7 h-7 rounded-lg bg-secondary hover:bg-muted flex items-center justify-center text-muted-foreground shrink-0 transition-colors">
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+            </button>
           </div>
-
-          {/* Action button */}
-          <ActionButton />
-
-          {/* Expand chevron */}
-          <button onClick={e => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="w-7 h-7 rounded-lg bg-secondary hover:bg-muted flex items-center justify-center text-muted-foreground shrink-0 transition-colors">
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-          </button>
         </div>
 
-        {/* If phone found from lookup, show inline */}
-        {lookupState === 'found' && !lead.phone && (
-          <div className="mt-2 ml-11 flex items-center gap-1.5 text-xs text-muted-foreground/50">
-            <UserX className="w-3 h-3" /> Not in Apollo
+        {/* Expanded section */}
+        {expanded && !compact && (
+          <div className="px-3 pb-3 border-t border-border/40 space-y-2.5 pt-2.5">
+            {/* Primary actions row */}
+            <div className="flex flex-wrap gap-1.5">
+              {/* WhatsApp — always shown */}
+              <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-500 rounded-full px-3 py-1.5 transition-colors active:scale-95">
+                <MessageCircle className="w-3 h-3" /> WhatsApp
+              </a>
+
+              {/* Reminder — always shown */}
+              <a href={calendarUrl} onClick={e => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-xs font-medium text-primary/80 hover:text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-1.5 transition-colors">
+                <Bell className="w-3 h-3" /> Reminder{!lead.next_action_date ? ' (tomorrow)' : ''}
+              </a>
+
+              {/* Call button if has phone */}
+              {lead.phone && (
+                <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1.5 hover:bg-emerald-500/20 transition-colors">
+                  <Phone className="w-3 h-3" /> {lead.phone}
+                </a>
+              )}
+
+              {/* Email */}
+              {lead.email && (
+                <a href={`mailto:${lead.email}?subject=Follow up - Pongs Stretch Ceiling&body=Hi ${lead.contact_name.split(' ')[0]},`}
+                  onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded-full px-2.5 py-1.5 transition-colors">
+                  <Mail className="w-3 h-3" /> Email
+                </a>
+              )}
+
+              {/* LinkedIn */}
+              {lead.linkedin_url && (
+                <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-1.5 transition-colors">
+                  <Link2 className="w-3 h-3" /> LinkedIn <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+
+              {lead.deal_value && (
+                <span className="flex items-center gap-0.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
+                  <IndianRupee className="w-3 h-3" />{lead.deal_value.toLocaleString('en-IN')}
+                </span>
+              )}
+
+              <button onClick={e => { e.stopPropagation(); setEditing(true); }}
+                className="flex items-center gap-1 text-xs font-medium text-foreground/60 hover:text-foreground bg-secondary rounded-full px-2.5 py-1 transition-colors ml-auto">
+                <Edit3 className="w-3 h-3" /> Edit
+              </button>
+            </div>
+
+            {/* Manual phone entry when lookup failed */}
+            {lookupState === 'not-found' && !lead.phone && (
+              <div className="flex gap-2 items-center p-2.5 bg-secondary/50 rounded-xl border border-border">
+                <UserX className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[11px] text-muted-foreground flex-shrink-0">Not in Apollo.</span>
+                <input
+                  type="tel"
+                  placeholder="Enter phone manually..."
+                  value={manualPhone}
+                  onChange={e => setManualPhone(e.target.value)}
+                  onClick={e => e.stopPropagation()}
+                  className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none min-w-0"
+                />
+                <button onClick={saveManualPhone} disabled={!manualPhone.trim() || savingPhone}
+                  className="flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2 py-1 disabled:opacity-40 transition-colors shrink-0">
+                  {savingPhone ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                  Save
+                </button>
+              </div>
+            )}
+
+            {/* Notes */}
+            {lead.notes && (
+              <div className="text-xs text-muted-foreground bg-secondary/50 rounded-lg p-2.5 border border-border leading-relaxed">
+                <span className="text-foreground font-medium block mb-0.5">Notes</span>
+                {lead.notes}
+              </div>
+            )}
+
+            {/* Next steps */}
+            {nextSteps.length > 0
+              ? <NextStepsPanel steps={nextSteps} />
+              : (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Update this lead&apos;s status to get AI-powered next steps.
+                </p>
+              )
+            }
           </div>
         )}
       </div>
 
-      {/* Expanded section */}
-      {expanded && !compact && (
-        <div className="px-3 pb-3 pt-1 border-t border-border/40 space-y-3">
-          {/* Contact actions row */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-2">
-            {lead.phone ? (
-              <>
-                <a href={`tel:${lead.phone}`}
-                  className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1.5 hover:bg-emerald-500/20 transition-colors">
-                  <Phone className="w-3 h-3" /> {lead.phone}
-                </a>
-                {waUrl && (
-                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-500 rounded-full px-3 py-1.5 transition-colors">
-                    <MessageCircle className="w-3 h-3" /> WhatsApp
-                  </a>
-                )}
-              </>
-            ) : lookupState === 'not-found' ? (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50 px-1">
-                <UserX className="w-3 h-3" /> No phone found in Apollo
-              </span>
-            ) : lookupState === 'idle' ? (
-              <button onClick={handleLookup}
-                className="flex items-center gap-1.5 text-xs font-medium text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-full px-2.5 py-1.5 hover:bg-violet-500/20 transition-colors">
-                <Search className="w-3 h-3" /> Find Phone / Email
-              </button>
-            ) : null}
-
-            {lead.email && (
-              <a href={`mailto:${lead.email}`}
-                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-1.5 transition-colors">
-                <Mail className="w-3 h-3" /> {lead.email}
-              </a>
-            )}
-
-            {lead.linkedin_url && (
-              <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-1.5 transition-colors">
-                <Link2 className="w-3 h-3" /> LinkedIn <ExternalLink className="w-2.5 h-2.5" />
-              </a>
-            )}
-          </div>
-
-          {/* Follow-up + quick actions */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {lead.next_action_date && (
-              <a href={`/api/calendar/${lead.id}`}
-                className="flex items-center gap-1.5 text-xs font-medium text-primary/80 hover:text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-1 transition-colors">
-                <Bell className="w-3 h-3" /> Add Reminder
-              </a>
-            )}
-            {!waUrl && lead.email && (
-              <a href={`mailto:${lead.email}?subject=Follow up - Pongs Stretch Ceiling&body=Hi ${lead.contact_name.split(' ')[0]},`}
-                className="flex items-center gap-1.5 text-xs font-medium text-sky-400/80 hover:text-sky-400 bg-sky-500/10 border border-sky-500/20 rounded-full px-2.5 py-1 transition-colors">
-                <Mail className="w-3 h-3" /> Email
-              </a>
-            )}
-            {lead.deal_value && (
-              <span className="flex items-center gap-0.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
-                <IndianRupee className="w-3 h-3" />
-                {lead.deal_value.toLocaleString('en-IN')}
-              </span>
-            )}
-            <button onClick={() => setEditing(true)}
-              className="flex items-center gap-1 text-xs font-medium text-foreground/60 hover:text-foreground bg-secondary rounded-full px-2.5 py-1 transition-colors ml-auto">
-              <Edit3 className="w-3 h-3" /> Edit
-            </button>
-          </div>
-
-          {/* Notes */}
-          {lead.notes && (
-            <div className="text-xs text-muted-foreground bg-secondary/50 rounded-lg p-2.5 border border-border leading-relaxed">
-              <span className="text-foreground font-medium block mb-0.5">Notes</span>
-              {lead.notes}
-            </div>
-          )}
-
-          {/* Next steps */}
-          {nextSteps.length > 0
-            ? <NextStepsPanel steps={nextSteps} />
-            : (
-              <p className="text-xs text-muted-foreground text-center py-2">
-                Update this lead&apos;s status to get AI-powered next steps.
-              </p>
-            )
-          }
-        </div>
-      )}
+      {/* Post-call modal */}
+      <PostCallModal
+        lead={lead}
+        open={showPostCall}
+        onClose={() => setShowPostCall(false)}
+        onUpdated={updated => handleUpdated(updated)}
+      />
 
       <UpdateLeadModal
         lead={lead}
@@ -347,6 +391,6 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
         onClose={() => setEditing(false)}
         onUpdated={handleUpdated}
       />
-    </div>
+    </>
   );
 }
