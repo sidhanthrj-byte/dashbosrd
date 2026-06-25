@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(id) as { status: string; contact_name: string; company_name: string } | undefined;
   if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { status, notes, next_action, next_action_date, phone, email } = body;
+  const { status, notes, next_action, next_action_date, phone, email, area, deal_value } = body;
   const prevStatus = lead.status;
 
   let aiNextSteps = null;
@@ -79,6 +79,8 @@ Respond ONLY with a valid JSON array, no explanation.`,
       next_action_date = COALESCE(?, next_action_date),
       phone = COALESCE(?, phone),
       email = COALESCE(?, email),
+      area = COALESCE(?, area),
+      deal_value = COALESCE(?, deal_value),
       ai_next_steps = COALESCE(?, ai_next_steps),
       last_contact_date = CASE WHEN ? IS NOT NULL THEN date('now') ELSE last_contact_date END,
       updated_at = datetime('now')
@@ -90,6 +92,8 @@ Respond ONLY with a valid JSON array, no explanation.`,
     nextDate,
     phone || null,
     email || null,
+    area || null,
+    deal_value ?? null,
     aiNextSteps,
     status || null,
     id

@@ -1,5 +1,5 @@
-import { LeadsView } from '@/components/crm/LeadsView';
+import { CRMApp } from '@/components/crm/CRMApp';
 
 export default function Home() {
-  return <LeadsView />;
+  return <CRMApp />;
 }

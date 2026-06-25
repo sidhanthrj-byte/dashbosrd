@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Phone, Loader2, CheckCircle2, Search } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { Lead } from '@/lib/db';
 
 type Props = {
@@ -13,7 +13,6 @@ type Props = {
 
 export function ContactLookupButton({ lead, onFound }: Props) {
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(!!lead.phone_fetched);
 
   async function lookup() {
     setLoading(true);
@@ -33,7 +32,6 @@ export function ContactLookupButton({ lead, onFound }: Props) {
 
       if (data.phone || data.email) {
         toast.success(`Found contact info for ${lead.contact_name}!`);
-        setDone(true);
         onFound(data.phone || null, data.email || null);
       } else {
         toast.info('No contact info found via ContactOut for this lead.');
@@ -45,20 +43,12 @@ export function ContactLookupButton({ lead, onFound }: Props) {
     }
   }
 
-  if (done) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-green-600">
-        <CheckCircle2 className="w-3.5 h-3.5" /> Contact found
-      </span>
-    );
-  }
-
   return (
     <Button size="sm" variant="outline" onClick={lookup} disabled={loading}
-      className="text-xs h-7 border-blue-200 text-blue-700 hover:bg-blue-50">
+      className="text-xs h-7 border-border text-muted-foreground hover:text-foreground hover:border-primary/50">
       {loading
-        ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Looking up...</>
-        : <><Search className="w-3 h-3 mr-1" /> Find Number</>}
+        ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Looking...</>
+        : <><Search className="w-3 h-3 mr-1" /> Find Phone</>}
     </Button>
   );
 }

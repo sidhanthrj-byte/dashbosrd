@@ -57,6 +57,9 @@ function initSchema(db: Database.Database) {
     );
   `);
 
+  try { db.exec('ALTER TABLE leads ADD COLUMN area TEXT'); } catch {}
+  try { db.exec('ALTER TABLE leads ADD COLUMN deal_value INTEGER'); } catch {}
+
   const count = (db.prepare('SELECT COUNT(*) as c FROM leads').get() as { c: number }).c;
   if (count === 0) {
     seedLeads(db);
@@ -231,6 +234,8 @@ export type Lead = {
   batch_number: number;
   priority: string;
   project_type: string | null;
+  area: string | null;
+  deal_value: number | null;
   created_at: string;
   updated_at: string;
 };
