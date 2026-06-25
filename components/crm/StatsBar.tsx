@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, TrendingUp, Clock, CheckCircle2, Zap } from 'lucide-react';
+import { Users, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
 
 type Stats = {
   total: number;
@@ -25,87 +25,57 @@ export function StatsBar({ onTodayClick }: Props) {
   }, []);
 
   if (!stats) return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6 animate-pulse">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-card rounded-xl border border-border h-24" />
-      ))}
+    <div className="space-y-2 animate-pulse">
+      <div className="h-12 bg-card rounded-xl border border-border" />
+      <div className="h-2 bg-card rounded-full" />
     </div>
   );
 
-  const pct = Math.round(((stats.total - (stats.total - stats.converted)) / Math.max(stats.total, 1)) * 100);
-  void pct;
-
-  const cards = [
-    {
-      label: 'Total Leads',
-      value: stats.total,
-      sub: `Batch ${stats.lastBatch}`,
-      icon: <Users className="w-4 h-4" />,
-      accent: 'text-blue-400',
-      glow: 'bg-blue-500/10 border-blue-500/20',
-    },
-    {
-      label: 'In Progress',
-      value: stats.inProgress,
-      sub: 'Active deals',
-      icon: <TrendingUp className="w-4 h-4" />,
-      accent: 'text-violet-400',
-      glow: 'bg-violet-500/10 border-violet-500/20',
-    },
-    {
-      label: "Today's Follow-ups",
-      value: stats.todayFollowUps,
-      sub: stats.todayFollowUps > 0 ? 'Needs attention!' : 'All clear ✓',
-      icon: <Clock className="w-4 h-4" />,
-      accent: stats.todayFollowUps > 0 ? 'text-orange-400' : 'text-muted-foreground',
-      glow: stats.todayFollowUps > 0 ? 'bg-orange-500/10 border-orange-500/20' : 'bg-card border-border',
-      onClick: onTodayClick,
-    },
-    {
-      label: 'Converted',
-      value: stats.converted,
-      sub: 'Orders confirmed',
-      icon: <CheckCircle2 className="w-4 h-4" />,
-      accent: 'text-emerald-400',
-      glow: 'bg-emerald-500/10 border-emerald-500/20',
-    },
+  const chips = [
+    { label: 'Leads', value: stats.total, icon: <Users className="w-3 h-3" />, color: 'text-foreground' },
+    { label: "Today", value: stats.todayFollowUps, icon: <Clock className="w-3 h-3" />, color: stats.todayFollowUps > 0 ? 'text-orange-400' : 'text-muted-foreground', onClick: onTodayClick, highlight: stats.todayFollowUps > 0 },
+    { label: 'Active', value: stats.inProgress, icon: <TrendingUp className="w-3 h-3" />, color: 'text-violet-400' },
+    { label: 'Won', value: stats.converted, icon: <CheckCircle2 className="w-3 h-3" />, color: 'text-emerald-400' },
   ];
 
+  const progress = ((6 - stats.nextBatchIn) / 6) * 100;
+
   return (
-    <div className="space-y-3 mb-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {cards.map(c => (
-          <div
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        {chips.map(c => (
+          <button
             key={c.label}
             onClick={c.onClick}
-            className={`bg-card border rounded-xl p-4 transition-all ${c.onClick ? 'cursor-pointer hover:scale-[1.02]' : ''} ${c.glow}`}
+            disabled={!c.onClick}
+            className={`flex-1 flex flex-col items-center py-2.5 px-1 rounded-xl border transition-all
+              ${c.highlight ? 'bg-orange-500/10 border-orange-500/30' : 'bg-card border-border'}
+              ${c.onClick ? 'cursor-pointer hover:bg-secondary active:scale-95' : 'cursor-default'}
+            `}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground font-medium">{c.label}</span>
-              <span className={c.accent}>{c.icon}</span>
-            </div>
-            <p className={`text-2xl font-bold ${c.accent}`}>{c.value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{c.sub}</p>
-          </div>
+            <span className={`flex items-center gap-1 ${c.color}`}>{c.icon}</span>
+            <span className={`text-lg font-bold leading-tight ${c.color}`}>{c.value}</span>
+            <span className="text-[10px] text-muted-foreground">{c.label}</span>
+          </button>
         ))}
       </div>
 
-      <div className="bg-card border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3">
-        <Zap className="w-4 h-4 text-primary shrink-0" />
+      {/* Progress to next batch */}
+      <div className="bg-card border border-border/50 rounded-xl px-3 py-2 flex items-center gap-2.5">
         <div className="flex-1">
-          <span className="text-sm text-foreground font-medium">
-            {stats.nextBatchIn === 0
-              ? '🎉 New batch of 12 leads just added!'
-              : `${stats.nextBatchIn} more contact${stats.nextBatchIn !== 1 ? 's' : ''} until 12 new leads auto-add`}
-          </span>
-          <div className="mt-1.5 h-1.5 bg-secondary rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-violet-500 rounded-full transition-all"
-              style={{ width: `${((6 - stats.nextBatchIn) / 6) * 100}%` }}
-            />
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-muted-foreground">
+              {stats.nextBatchIn === 0
+                ? '🎉 New batch just added!'
+                : `${stats.nextBatchIn} more contact${stats.nextBatchIn !== 1 ? 's' : ''} → 12 new leads`}
+            </span>
+            <span className="text-[11px] text-primary font-semibold">{6 - stats.nextBatchIn}/6</span>
+          </div>
+          <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-primary to-violet-500 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }} />
           </div>
         </div>
-        <span className="text-xs text-primary font-bold shrink-0">{6 - stats.nextBatchIn}/6</span>
       </div>
     </div>
   );

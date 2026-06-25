@@ -14,9 +14,10 @@ export async function GET(req: NextRequest) {
   const city = searchParams.get('city');
   const area = searchParams.get('area');
   const priority = searchParams.get('priority');
+  const phoneFilter = searchParams.get('phone_filter'); // 'has_phone' | 'no_contact'
   const sort = searchParams.get('sort') || 'priority';
 
-  let sql = 'SELECT * FROM leads WHERE user_id = ?';
+  let sql = 'SELECT * FROM leads WHERE user_id = ? AND (archived = 0 OR archived IS NULL)';
   const params: (string | number)[] = [session.userId];
 
   if (status && status !== 'all') { sql += ' AND status = ?'; params.push(status); }
@@ -28,6 +29,8 @@ export async function GET(req: NextRequest) {
   if (city && city !== 'all') { sql += ' AND city LIKE ?'; params.push(`%${city}%`); }
   if (area && area !== 'all') { sql += ' AND area LIKE ?'; params.push(`%${area}%`); }
   if (priority && priority !== 'all') { sql += ' AND priority = ?'; params.push(priority); }
+  if (phoneFilter === 'has_phone') { sql += ' AND phone IS NOT NULL'; }
+  else if (phoneFilter === 'no_contact') { sql += ' AND phone IS NULL AND phone_fetched = 1'; }
 
   const ORDER: Record<string, string> = {
     priority: "CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC, updated_at DESC",

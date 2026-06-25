@@ -36,6 +36,7 @@ export async function initDb(): Promise<void> {
       email TEXT,
       phone TEXT,
       phone_fetched INTEGER DEFAULT 0,
+      archived INTEGER DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'new',
       last_contact_date TEXT,
       next_action TEXT,
@@ -73,6 +74,7 @@ export async function initDb(): Promise<void> {
     'ALTER TABLE leads ADD COLUMN area TEXT',
     'ALTER TABLE leads ADD COLUMN deal_value INTEGER',
     'ALTER TABLE leads ADD COLUMN user_id INTEGER REFERENCES users(id)',
+    'ALTER TABLE leads ADD COLUMN archived INTEGER DEFAULT 0',
   ];
   for (const m of migrations) {
     try { await db.execute(m); } catch {}
@@ -204,6 +206,7 @@ export type Lead = {
   priority: string;
   project_type: string | null;
   deal_value: number | null;
+  archived: number;
   user_id: number | null;
   created_at: string;
   updated_at: string;

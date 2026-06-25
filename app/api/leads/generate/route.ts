@@ -26,23 +26,29 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { count = 10, page = 1, area } = await req.json().catch(() => ({}));
+  const { count = 10, page = 1, area, replace_lead_id } = await req.json().catch(() => ({}));
   const apolloKey = process.env.APOLLO_API_KEY;
   if (!apolloKey) return NextResponse.json({ error: 'Apollo API key not configured' }, { status: 500 });
 
+  await initDb();
+
+  // Archive the replaced lead before generating a new one
+  if (replace_lead_id) {
+    await run("UPDATE leads SET archived = 1, updated_at = datetime('now') WHERE id = ? AND user_id = ?",
+      [replace_lead_id, session.userId]);
+  }
+
   const city = session.city;
-  const cityLocation = CITY_LOCATIONS[city] || city;
-  // If area specified, search within that area of the city; otherwise search whole city
-  const location = area ? `${area}, ${cityLocation}` : cityLocation;
+  const location = CITY_LOCATIONS[city] || city;
 
   try {
-    // Apollo people search for architects in the user's city/area
-    const searchBody = {
+    // Apollo people search — always search at city level (area filter is applied post-fetch)
+    const searchBody: Record<string, unknown> = {
       q_person_title_fuzzy_match: true,
       person_titles: TITLES,
       person_locations: [location],
       q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
-      per_page: Math.min(count, 25),
+      per_page: Math.min(count * (area ? 3 : 1), 25), // fetch more when area-filtering
       page,
     };
 
@@ -59,13 +65,25 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const people = data?.people || [];
+    let people = data?.people || [];
 
-    if (people.length === 0) {
-      return NextResponse.json({ leads: [], message: 'No new leads found from Apollo for your city.' });
+    // Post-fetch area filter: Apollo doesn't support neighbourhood-level location,
+    // so we filter results by person.city or organization address matching the area
+    if (area && people.length > 0) {
+      const areaLower = area.toLowerCase();
+      const filtered = people.filter((p: Record<string, unknown>) => {
+        const personCity = ((p.city as string) || '').toLowerCase();
+        const orgCity = ((p.organization as Record<string, unknown>)?.city as string || '').toLowerCase();
+        const orgAddr = ((p.organization as Record<string, unknown>)?.raw_address as string || '').toLowerCase();
+        return personCity.includes(areaLower) || orgCity.includes(areaLower) || orgAddr.includes(areaLower);
+      });
+      // Use filtered if it has results; otherwise fall back to unfiltered (area may not match Apollo data)
+      if (filtered.length > 0) people = filtered;
     }
 
-    await initDb();
+    if (people.length === 0) {
+      return NextResponse.json({ leads: [], message: area ? `No leads found in ${area} from Apollo — try searching the whole city.` : 'No new leads found from Apollo for your city.' });
+    }
 
     // Get existing linkedin URLs to avoid duplicates
     const existing = await query<{ linkedin_url: string }>(

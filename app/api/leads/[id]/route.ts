@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   );
   if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { status, notes, next_action, next_action_date, phone, email, area, deal_value } = body;
+  const { status, notes, next_action, next_action_date, phone, email, area, deal_value, archived } = body;
   const prevStatus = lead.status;
 
   let aiNextSteps: string | null = null;
@@ -91,13 +91,14 @@ Respond ONLY with a valid JSON array, no explanation.`,
       area = COALESCE(?, area),
       deal_value = COALESCE(?, deal_value),
       ai_next_steps = COALESCE(?, ai_next_steps),
+      archived = COALESCE(?, archived),
       last_contact_date = CASE WHEN ? IS NOT NULL THEN date('now') ELSE last_contact_date END,
       updated_at = datetime('now')
     WHERE id = ? AND user_id = ?
   `, [
     status || null, notes || null, next_action || null, nextDate,
     phone || null, email || null, area || null, deal_value ?? null,
-    aiNextSteps, status || null, id, session.userId,
+    aiNextSteps, archived ?? null, status || null, id, session.userId,
   ]);
 
   if (status && status !== prevStatus && status !== 'new') {

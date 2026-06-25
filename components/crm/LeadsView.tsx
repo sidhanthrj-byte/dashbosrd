@@ -5,7 +5,7 @@ import { Lead } from '@/lib/db';
 import { LeadCard } from './LeadCard';
 import { StatsBar } from './StatsBar';
 import { STATUS_CONFIG } from '@/lib/next-steps';
-import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2, Phone, PhoneOff } from 'lucide-react';
 import { AddLeadModal } from './AddLeadModal';
 import { toast } from 'sonner';
 
@@ -16,6 +16,8 @@ const SORT_OPTIONS = [
   { value: 'name',     label: 'Name A–Z' },
   { value: 'company',  label: 'Company' },
 ];
+
+type PhoneTab = 'all' | 'has_phone' | 'no_contact';
 
 type Props = {
   onNavigateToday?: () => void;
@@ -29,6 +31,7 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sort, setSort] = useState('priority');
+  const [phoneTab, setPhoneTab] = useState<PhoneTab>('all');
   const [statsKey, setStatsKey] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
@@ -44,8 +47,9 @@ export function LeadsView({ onNavigateToday }: Props) {
       if (priorityFilter !== 'all') params.set('priority', priorityFilter);
       if (search) params.set('search', search);
       params.set('sort', sort);
+      if (phoneTab !== 'all') params.set('phone_filter', phoneTab);
       const res = await fetch(`/api/leads?${params}`);
-      if (!res.ok) return; // keep existing leads on error
+      if (!res.ok) return;
       const data = await res.json();
       if (Array.isArray(data.leads)) setLeads(data.leads);
     } catch {
@@ -53,7 +57,7 @@ export function LeadsView({ onNavigateToday }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, priorityFilter, search, sort]);
+  }, [statusFilter, priorityFilter, search, sort, phoneTab]);
 
   useEffect(() => {
     const t = setTimeout(fetchLeads, 250);
@@ -69,6 +73,14 @@ export function LeadsView({ onNavigateToday }: Props) {
     setLeads(prev => [lead, ...prev]);
     setStatsKey(k => k + 1);
     setShowAddLead(false);
+  }
+
+  function handleLeadReplace(archivedId: number, newLead: Lead | null) {
+    setLeads(prev => {
+      const filtered = prev.filter(l => l.id !== archivedId);
+      return newLead ? [newLead, ...filtered] : filtered;
+    });
+    setStatsKey(k => k + 1);
   }
 
   async function generateLeads() {
@@ -116,91 +128,99 @@ export function LeadsView({ onNavigateToday }: Props) {
 
   const hasFilters = !!(search || statusFilter !== 'all' || priorityFilter !== 'all');
 
+  const PHONE_TABS: { id: PhoneTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'all', label: 'All', icon: null },
+    { id: 'has_phone', label: 'Has Phone', icon: <Phone className="w-3 h-3" /> },
+    { id: 'no_contact', label: 'No Contact', icon: <PhoneOff className="w-3 h-3" /> },
+  ];
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="px-4 md:px-6 pt-4 md:pt-6 pb-3 shrink-0 space-y-3">
+      <div className="px-3 md:px-5 pt-3 md:pt-5 pb-2 shrink-0 space-y-2.5">
         <StatsBar key={statsKey} onTodayClick={onNavigateToday} />
 
-        {/* Search row */}
-        <div className="flex gap-2">
+        {/* Search + actions row */}
+        <div className="flex gap-1.5">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <input
               type="search"
-              placeholder="Search name, company, area (e.g. Bandra)..."
+              placeholder="Name, company, area..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-9 h-10 bg-secondary border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+              className="w-full pl-9 pr-8 h-9 bg-secondary border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 h-10 rounded-xl border text-sm font-medium transition-colors shrink-0 ${showFilters ? 'bg-primary/15 border-primary/30 text-primary' : 'bg-secondary border-border text-muted-foreground hover:text-foreground'}`}
+            className={`w-9 h-9 rounded-xl border flex items-center justify-center text-sm transition-colors shrink-0 ${showFilters ? 'bg-primary/15 border-primary/30 text-primary' : 'bg-secondary border-border text-muted-foreground hover:text-foreground'}`}
           >
             <SlidersHorizontal className="w-4 h-4" />
-            {hasFilters && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+            {hasFilters && <span className="absolute w-1.5 h-1.5 rounded-full bg-amber-400 translate-x-2 -translate-y-2" />}
           </button>
-          <button
-            onClick={() => setShowAddLead(true)}
-            className="flex items-center gap-1 px-3 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0"
-          >
+          <button onClick={() => setShowAddLead(true)}
+            className="w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center shrink-0">
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline ml-0.5">Add</span>
           </button>
           <button
             onClick={() => setShowGeneratePanel(!showGeneratePanel)}
             disabled={generating}
-            className="flex items-center gap-1 px-3 h-10 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors shrink-0 disabled:opacity-50"
-          >
+            className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 text-white transition-colors flex items-center justify-center shrink-0 disabled:opacity-50">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span className="hidden sm:inline ml-0.5">Generate</span>
           </button>
           <button onClick={exportCSV} title="Export CSV"
-            className="w-10 h-10 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center shrink-0">
+            className="w-9 h-9 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center shrink-0">
             <Download className="w-4 h-4" />
           </button>
         </div>
 
+        {/* Phone filter tabs */}
+        <div className="flex gap-1.5">
+          {PHONE_TABS.map(tab => (
+            <button key={tab.id} onClick={() => setPhoneTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold border transition-colors
+                ${phoneTab === tab.id
+                  ? tab.id === 'has_phone' ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                    : tab.id === 'no_contact' ? 'bg-orange-500/15 border-orange-500/30 text-orange-400'
+                    : 'bg-primary/15 border-primary/30 text-primary'
+                  : 'bg-secondary border-border text-muted-foreground hover:text-foreground'}`}
+            >
+              {tab.icon}{tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Generate panel */}
         {showGeneratePanel && !generating && (
-          <div className="p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
-            <p className="text-sm font-medium text-violet-300 mb-1">Generate Leads via Apollo</p>
-            <p className="text-xs text-muted-foreground mb-3">
-              Fetches real architects from Apollo&apos;s database — with names, companies, emails, and phones where available.
-            </p>
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">Filter by Area (optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Bandra, Koramangala, Adyar..."
-                  value={generateArea}
-                  onChange={e => setGenerateArea(e.target.value)}
-                  className="w-full h-9 px-3 bg-secondary border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-violet-400/50"
-                />
-                <p className="text-[10px] text-muted-foreground/60 mt-1">Leave blank to search your whole city</p>
+          <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl space-y-2.5">
+            <p className="text-xs font-semibold text-violet-300">Generate Leads via Apollo</p>
+            <input
+              type="text"
+              placeholder="Filter by area (e.g. Bandra, Koramangala)... or leave blank for whole city"
+              value={generateArea}
+              onChange={e => setGenerateArea(e.target.value)}
+              className="w-full h-8 px-3 bg-secondary border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-violet-400/50"
+            />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground">Count:</span>
+                {[10, 15, 25].map(n => (
+                  <button key={n} onClick={() => setGenerateCount(n)}
+                    className={`w-8 h-7 rounded-lg text-xs font-semibold border transition-colors ${generateCount === n ? 'bg-violet-500 text-white border-violet-400' : 'bg-secondary border-border text-muted-foreground hover:text-foreground'}`}>
+                    {n}
+                  </button>
+                ))}
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">How many?</span>
-                  {[10, 15, 25].map(n => (
-                    <button key={n} onClick={() => setGenerateCount(n)}
-                      className={`w-9 h-8 rounded-lg text-xs font-semibold border transition-colors ${generateCount === n ? 'bg-violet-500 text-white border-violet-400' : 'bg-secondary border-border text-muted-foreground hover:text-foreground'}`}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <button onClick={generateLeads}
-                  className="ml-auto px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors">
-                  Fetch {generateCount} Leads{generateArea.trim() ? ` in ${generateArea.trim()}` : ''}
-                </button>
-              </div>
+              <button onClick={generateLeads}
+                className="ml-auto px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors">
+                Fetch {generateCount}{generateArea.trim() ? ` in ${generateArea.trim()}` : ''}
+              </button>
             </div>
           </div>
         )}
@@ -220,7 +240,7 @@ export function LeadsView({ onNavigateToday }: Props) {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Priority / Tier</label>
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Tier</label>
                 <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
                   className="w-full h-9 px-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none">
                   <option value="all">All</option>
@@ -232,7 +252,7 @@ export function LeadsView({ onNavigateToday }: Props) {
             </div>
             <div>
               <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 block">Sort by</label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 {SORT_OPTIONS.map(o => (
                   <button key={o.value} onClick={() => setSort(o.value)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${sort === o.value ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}>
@@ -249,45 +269,64 @@ export function LeadsView({ onNavigateToday }: Props) {
 
         {/* Count row */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {loading ? 'Loading...' : generating ? 'Fetching from Apollo...' : `${leads.length} lead${leads.length !== 1 ? 's' : ''}`}
+          <span className="text-[11px] text-muted-foreground">
+            {loading ? 'Loading...' : generating ? 'Fetching from Apollo...' : `${leads.length} lead${leads.length !== 1 ? 's' : ''}${phoneTab === 'no_contact' ? ' without phone' : phoneTab === 'has_phone' ? ' with phone' : ''}`}
           </span>
+          {phoneTab === 'no_contact' && leads.length > 0 && (
+            <span className="text-[11px] text-orange-400">Tap &quot;Replace&quot; to swap for a fresh lead</span>
+          )}
         </div>
       </div>
 
       {/* Leads list */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6">
+      <div className="flex-1 overflow-y-auto px-3 md:px-5 pb-4">
         {generating && (
-          <div className="flex items-center gap-2 py-4 text-violet-400 text-sm">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Searching Apollo for architects in your city...
+          <div className="flex items-center gap-2 py-3 text-violet-400 text-xs">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            Searching Apollo for architects...
           </div>
         )}
         {loading && leads.length === 0 ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border h-28 animate-pulse" />
+          <div className="space-y-2">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-card rounded-xl border border-border h-[72px] animate-pulse" />
             ))}
           </div>
         ) : leads.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Search className="w-8 h-8 mx-auto mb-3 opacity-20" />
-            <p className="text-sm font-medium">No leads found</p>
-            <p className="text-xs mt-1 opacity-60">Try searching by name, company, or area like &quot;Bandra&quot; or &quot;Koramangala&quot;</p>
-            {hasFilters && (
-              <button onClick={clearFilters} className="mt-3 text-xs text-primary hover:underline block mx-auto">
-                Clear filters
-              </button>
+          <div className="text-center py-12 text-muted-foreground">
+            {phoneTab === 'no_contact' ? (
+              <>
+                <PhoneOff className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                <p className="text-sm font-medium">No leads without contact info</p>
+                <p className="text-xs mt-1 opacity-60">All your looked-up leads have phone numbers!</p>
+              </>
+            ) : phoneTab === 'has_phone' ? (
+              <>
+                <Phone className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                <p className="text-sm font-medium">No leads with phone numbers yet</p>
+                <p className="text-xs mt-1 opacity-60">Use &quot;Find #&quot; on leads to search Apollo for their contact info.</p>
+              </>
+            ) : (
+              <>
+                <Search className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                <p className="text-sm font-medium">No leads found</p>
+                <p className="text-xs mt-1 opacity-60">Try searching by name, company, or area like &quot;Bandra&quot;</p>
+                {hasFilters && (
+                  <button onClick={clearFilters} className="mt-2 text-xs text-primary hover:underline block mx-auto">
+                    Clear filters
+                  </button>
+                )}
+                <button onClick={() => setShowGeneratePanel(true)}
+                  className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold mx-auto transition-colors">
+                  <Sparkles className="w-4 h-4" /> Generate Leads from Apollo
+                </button>
+              </>
             )}
-            <button onClick={() => setShowGeneratePanel(true)}
-              className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold mx-auto transition-colors">
-              <Sparkles className="w-4 h-4" /> Generate Leads from Apollo
-            </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {leads.map(lead => (
-              <LeadCard key={lead.id} lead={lead} onUpdate={handleLeadUpdate} />
+              <LeadCard key={lead.id} lead={lead} onUpdate={handleLeadUpdate} onReplace={handleLeadReplace} />
             ))}
           </div>
         )}
