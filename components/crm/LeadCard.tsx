@@ -21,14 +21,14 @@ type Props = {
 
 const PRIORITY_COLOR: Record<string, string> = {
   high:   'from-amber-500 to-orange-500',
-  medium: 'from-blue-500 to-indigo-500',
-  low:    'from-slate-500 to-slate-600',
+  medium: 'from-zinc-500 to-zinc-600',
+  low:    'from-slate-600 to-slate-700',
 };
 
 const AVATAR_COLOR: Record<string, string> = {
   high:   'from-amber-500/80 to-orange-600/80',
-  medium: 'from-indigo-500/80 to-violet-600/80',
-  low:    'from-slate-500/80 to-slate-600/80',
+  medium: 'from-zinc-600/80 to-zinc-700/80',
+  low:    'from-slate-600/80 to-slate-700/80',
 };
 
 function initials(name: string) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Users, KanbanSquare, Clock, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, KanbanSquare, Clock, ChevronRight, LogOut, MapPin } from 'lucide-react';
 
 export type View = 'dashboard' | 'leads' | 'pipeline' | 'today';
 
@@ -15,9 +15,12 @@ type NavItem = {
 type Props = {
   current: View;
   onNavigate: (v: View) => void;
+  userName?: string;
+  userCity?: string;
+  onLogout?: () => void;
 };
 
-export function Sidebar({ current, onNavigate }: Props) {
+export function Sidebar({ current, onNavigate, userName, userCity, onLogout }: Props) {
   const [todayCount, setTodayCount] = useState(0);
 
   useEffect(() => {
@@ -38,8 +41,8 @@ export function Sidebar({ current, onNavigate }: Props) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center">
-            <span className="text-white font-black text-xs">P</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+            <span className="text-black font-black text-xs">P</span>
           </div>
           <div>
             <p className="text-sm font-bold text-sidebar-foreground leading-none">Pongs CRM</p>
@@ -67,7 +70,7 @@ export function Sidebar({ current, onNavigate }: Props) {
               </span>
               <span className="flex-1 text-left">{item.label}</span>
               {item.badge != null && item.badge > 0 && (
-                <span className="text-[10px] font-bold bg-orange-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="text-[10px] font-bold bg-amber-500 text-black rounded-full w-4 h-4 flex items-center justify-center">
                   {item.badge > 9 ? '9+' : item.badge}
                 </span>
               )}
@@ -78,9 +81,37 @@ export function Sidebar({ current, onNavigate }: Props) {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-sidebar-border">
-        <p className="text-[10px] text-muted-foreground/60">Sidhanth · Pongs Stretch Ceiling</p>
-        <p className="text-[10px] text-muted-foreground/40 mt-0.5">AI-powered sales CRM</p>
+      <div className="px-4 py-4 border-t border-sidebar-border space-y-3">
+        {(userName || userCity) && (
+          <div className="flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-primary font-bold text-[10px]">
+                {userName ? userName[0].toUpperCase() : '?'}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-sidebar-foreground leading-none truncate">{userName}</p>
+              {userCity && (
+                <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                  <MapPin className="w-2.5 h-2.5 shrink-0" />
+                  {userCity}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Sign out
+          </button>
+        )}
+        {!userName && (
+          <p className="text-[10px] text-muted-foreground/40">AI-powered sales CRM</p>
+        )}
       </div>
     </aside>
   );
