@@ -52,6 +52,12 @@ Previous status: ${prevStatus}
 New status: ${status}
 Notes: ${notes || 'None'}
 
+CRITICAL: Read the notes carefully. If notes mention "not interested", "out of budget", "no response", "bad timing", "already has vendor", or similar signals:
+- Do NOT suggest calling in 3 days
+- Suggest appropriate longer gaps (1-2 months for "not interested", 2 weeks for "no response", etc.)
+- Suggest alternative approaches (email instead of call, send brochure, wait for project update)
+- The timeframe must reflect reality — don't push a lead that's clearly cold
+
 Give me exactly 3 specific, actionable next steps as a JSON array. Each step should have: action (string), timeframe (string), priority ("high"/"medium"/"low"), and optionally a short call script (50 words max).
 
 Respond ONLY with a valid JSON array, no explanation.`,

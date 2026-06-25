@@ -10,11 +10,12 @@ type Props = {
   onFound: (phone: string | null, email: string | null) => void;
 };
 
-type State = 'idle' | 'loading' | 'done-found' | 'done-notfound';
+type LookupState = 'idle' | 'loading' | 'found' | 'not-found';
 
 export function ContactLookupButton({ lead, onFound }: Props) {
-  const [state, setState] = useState<State>('idle');
-  const [result, setResult] = useState<{ phone: string | null; email: string | null } | null>(null);
+  const [state, setState] = useState<LookupState>('idle');
+  const [foundPhone, setFoundPhone] = useState<string | null>(null);
+  const [foundEmail, setFoundEmail] = useState<string | null>(null);
 
   async function lookup() {
     setState('loading');
@@ -27,27 +28,29 @@ export function ContactLookupButton({ lead, onFound }: Props) {
           linkedinUrl: lead.linkedin_url,
           name: lead.contact_name,
           company: lead.company_name,
+          email: lead.email,
         }),
       });
       const data = await res.json();
 
+      const phone = data.phone || null;
+      const email = data.email || null;
+
       if (!res.ok) {
-        toast.error('Lookup failed: ' + (data.error || 'Unknown error'));
+        toast.error(data.error || 'Lookup failed');
         setState('idle');
         return;
       }
 
-      const phone = data.phone || null;
-      const email = data.email || null;
-
       if (phone || email) {
-        toast.success(`Found info for ${lead.contact_name}!`);
-        setState('done-found');
-        setResult({ phone, email });
+        toast.success(`Found contact info for ${lead.contact_name}!`);
+        setState('found');
+        setFoundPhone(phone);
+        setFoundEmail(email);
         onFound(phone, email);
       } else {
-        toast.info('No contact info found for this lead.');
-        setState('done-notfound');
+        toast.info('No phone or email found in Apollo for this contact.');
+        setState('not-found');
         onFound(null, null);
       }
     } catch (err) {
@@ -58,45 +61,50 @@ export function ContactLookupButton({ lead, onFound }: Props) {
 
   if (state === 'loading') {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border rounded-full px-2.5 py-1">
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary border border-border rounded-full px-3 py-1.5">
         <Loader2 className="w-3 h-3 animate-spin" /> Searching Apollo...
       </span>
     );
   }
 
-  if (state === 'done-notfound') {
+  if (state === 'not-found') {
     return (
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50 rounded-full px-2.5 py-1">
-        <UserX className="w-3 h-3" /> Not found
+        <UserX className="w-3 h-3" /> Not in Apollo
       </span>
     );
   }
 
-  if (state === 'done-found' && result) {
+  if (state === 'found') {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        {result.phone && (
-          <a href={`tel:${result.phone}`}
-            className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1 hover:bg-emerald-500/20 transition-colors">
-            <Phone className="w-3 h-3" /> {result.phone}
+        {foundPhone ? (
+          <a href={`tel:${foundPhone}`}
+            className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1.5 hover:bg-emerald-500/20 transition-colors">
+            <Phone className="w-3 h-3" /> {foundPhone}
           </a>
+        ) : (
+          <span className="text-xs text-muted-foreground/50 flex items-center gap-1">
+            <Phone className="w-3 h-3" /> No phone in Apollo
+          </span>
         )}
-        {result.email && !lead.email && (
-          <a href={`mailto:${result.email}`}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            <Mail className="w-3 h-3" /> {result.email}
+        {foundEmail && (
+          <a href={`mailto:${foundEmail}`}
+            className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+            <Mail className="w-3 h-3" /> {foundEmail}
           </a>
         )}
       </div>
     );
   }
 
+  // idle state
   return (
     <button
       onClick={lookup}
-      className="flex items-center gap-1.5 text-xs text-primary/80 bg-primary/10 border border-primary/20 rounded-full px-2.5 py-1 hover:bg-primary/20 transition-colors"
+      className="flex items-center gap-1.5 text-xs font-medium text-primary/80 bg-primary/10 border border-primary/20 rounded-full px-2.5 py-1.5 hover:bg-primary/20 transition-colors"
     >
-      <Search className="w-3 h-3" /> Find Phone
+      <Search className="w-3 h-3" /> Find Phone / Email
     </button>
   );
 }
