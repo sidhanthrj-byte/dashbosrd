@@ -29,7 +29,7 @@ const TITLES = [
 function tierFromTitle(title: string): string {
   const t = (title || '').toLowerCase();
   if (t.includes('principal') || t.includes('founder') || t.includes('director') || t.includes('managing') || t.includes('chief') || t.includes('partner')) return 'high';
-  if (t.includes('senior') || t.includes('associate')) return 'medium';
+  if (t.includes('senior') || t.includes('associate') || t.includes('head') || t.includes('lead')) return 'medium';
   return 'low';
 }
 
@@ -54,12 +54,17 @@ interface ApolloMatchPerson {
   sanitized_phone?: string;
 }
 
-// Step 1: Geocode area name → lat/lng using Nominatim (free, no key)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApolloPerson = Record<string, any>;
+
 async function geocodeArea(area: string, city: string): Promise<{ lat: number; lon: number } | null> {
   const q = encodeURIComponent(`${area}, ${city}, India`);
   const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'PongsCRM/1.0 (sidhanthrj@gmail.com)' } });
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'PongsCRM/1.0 (sidhanthrj@gmail.com)' },
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) return null;
     const data = await res.json();
     if (!data[0]) return null;
@@ -69,39 +74,43 @@ async function geocodeArea(area: string, city: string): Promise<{ lat: number; l
   }
 }
 
-// Step 2: Find architect/interior design firms near coordinates using Overpass API (free, no key)
-async function findFirmsNearby(lat: number, lon: number, radiusMeters = 2500): Promise<Array<{ name: string; address: string; phone: string | null }>> {
+// Name-pattern Overpass query — finds businesses whose name contains architecture/design keywords
+// Much broader than tag-based search and works better for Indian cities
+async function findFirmsNearby(lat: number, lon: number, radiusMeters = 3000): Promise<Array<{ name: string; address: string; phone: string | null }>> {
   const overpassQuery = `
     [out:json][timeout:20];
     (
-      node["office"="architect"](around:${radiusMeters},${lat},${lon});
-      node["office"="interior_design"](around:${radiusMeters},${lat},${lon});
-      node["craft"="interior_designer"](around:${radiusMeters},${lat},${lon});
-      node["office"="designer"](around:${radiusMeters},${lat},${lon});
-      way["office"="architect"](around:${radiusMeters},${lat},${lon});
-      way["office"="interior_design"](around:${radiusMeters},${lat},${lon});
+      node["office"~"architect|interior_design|designer|design_studio",i](around:${radiusMeters},${lat},${lon});
+      way["office"~"architect|interior_design|designer|design_studio",i](around:${radiusMeters},${lat},${lon});
+      node["name"~"architect|interior|design studio|designers",i](around:${radiusMeters},${lat},${lon});
+      way["name"~"architect|interior|design studio|designers",i](around:${radiusMeters},${lat},${lon});
     );
     out center tags;
   `;
-
   try {
     const res = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `data=${encodeURIComponent(overpassQuery)}`,
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const data = await res.json();
     const elements: OsmElement[] = data?.elements || [];
-
-    return elements
-      .filter(el => el.tags?.name)
-      .map(el => ({
-        name: el.tags!.name!,
+    const seen = new Set<string>();
+    const results: Array<{ name: string; address: string; phone: string | null }> = [];
+    for (const el of elements) {
+      const name = el.tags?.name;
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      results.push({
+        name,
         address: [el.tags?.['addr:street'], el.tags?.['addr:suburb'], el.tags?.['addr:city']]
           .filter(Boolean).join(', ') || '',
         phone: el.tags?.phone || el.tags?.['contact:phone'] || null,
-      }));
+      });
+    }
+    return results;
   } catch {
     return [];
   }
@@ -118,6 +127,7 @@ async function matchApolloContact(companyName: string, apolloKey: string): Promi
         reveal_personal_emails: true,
         reveal_phone_number: true,
       }),
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -125,6 +135,19 @@ async function matchApolloContact(companyName: string, apolloKey: string): Promi
   } catch {
     return null;
   }
+}
+
+function extractPhone(person: ApolloMatchPerson | null, fallback?: string | null): string | null {
+  if (!person) return fallback || null;
+  const phones = person.phone_numbers || [];
+  const mobile = phones.find(p => p.type === 'mobile');
+  const phone = mobile?.raw_number || phones[0]?.raw_number || null;
+  if (phone) return phone;
+  return person.organization?.primary_phone?.number
+    || person.organization?.phone
+    || person.sanitized_phone
+    || fallback
+    || null;
 }
 
 export async function POST(req: NextRequest) {
@@ -161,121 +184,182 @@ export async function POST(req: NextRequest) {
   );
   if (batchSetting[0]) batchNum = parseInt(batchSetting[0].value) + 1;
 
-  // ── OPENSTREETMAP PATH (free, no key) when area specified ─────────────────
-  if (area) {
-    try {
-      const coords = await geocodeArea(area, city);
+  async function insertLead(
+    companyName: string,
+    contactName: string,
+    contactTitle: string,
+    phone: string | null,
+    email: string | null,
+    linkedinUrl: string | null,
+    leadArea: string | null,
+    notes: string | null,
+  ) {
+    if (linkedinUrl && existingUrls.has(linkedinUrl)) return null;
+    if (existingCombos.has(`${contactName}|${companyName}`)) return null;
 
-      if (!coords) {
-        return NextResponse.json({
-          leads: [],
-          message: `Could not locate "${area}" in ${city}. Check the spelling and try again.`,
-        });
-      }
-
-      const firms = await findFirmsNearby(coords.lat, coords.lon, 3000);
-
-      if (firms.length === 0) {
-        // OSM has sparse coverage — fall back to Apollo city search and note it
-        return NextResponse.json({
-          leads: [],
-          message: `No firms found on OpenStreetMap for ${area}. Try searching city-wide (leave area blank) — coverage in Indian neighbourhoods is limited.`,
-        });
-      }
-
-      const addedLeads = [];
-      const limit = Math.min(count, firms.length);
-
-      for (let i = 0; i < limit; i++) {
-        const firm = firms[i];
-        const companyName = firm.name;
-
-        const alreadyExists = [...existingCombos].some(c => c.endsWith(`|${companyName}`));
-        if (alreadyExists) continue;
-
-        // Try Apollo to enrich with a contact person
-        const person = await matchApolloContact(companyName, apolloKey);
-
-        let contactName = person?.name
-          || `${person?.first_name || ''} ${person?.last_name || ''}`.trim()
-          || null;
-        const contactTitle = person?.title || 'Architect';
-        const linkedinUrl = person?.linkedin_url || null;
-        const email = person?.email || null;
-
-        const phones = person?.phone_numbers || [];
-        const mobile = phones.find(p => p.type === 'mobile');
-        let phone: string | null = mobile?.raw_number || phones[0]?.raw_number || null;
-        if (!phone) {
-          phone = firm.phone
-            || person?.organization?.primary_phone?.number
-            || person?.organization?.phone
-            || person?.sanitized_phone
-            || null;
-        }
-
-        if (!contactName) contactName = `${companyName} — Contact Needed`;
-
-        if (linkedinUrl && existingUrls.has(linkedinUrl)) continue;
-        if (existingCombos.has(`${contactName}|${companyName}`)) continue;
-
-        const priority = tierFromTitle(contactTitle);
-
-        const result = await run(
-          `INSERT INTO leads (company_name, contact_name, contact_title, city, state, area, linkedin_url, email, phone, phone_fetched, priority, project_type, batch_number, status, user_id, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`,
-          [
-            companyName, contactName, contactTitle,
-            city, '', area,
-            linkedinUrl, email, phone, phone ? 1 : 0,
-            priority, null,
-            batchNum, session.userId,
-            firm.address ? `Found via OpenStreetMap: ${firm.address}` : 'Found via OpenStreetMap',
-          ]
-        );
-
-        const newLead = await query('SELECT * FROM leads WHERE id = ?', [result.lastInsertRowid]);
-        if (newLead[0]) {
-          addedLeads.push(newLead[0]);
-          existingUrls.add(linkedinUrl || '');
-          existingCombos.add(`${contactName}|${companyName}`);
-        }
-      }
-
-      if (addedLeads.length > 0) {
-        await run('INSERT OR REPLACE INTO settings VALUES (?, ?)', [`last_batch_${session.userId}`, String(batchNum)]);
-      }
-
-      return NextResponse.json({
-        leads: addedLeads,
-        added: addedLeads.length,
-        searched: firms.length,
-        source: 'openstreetmap',
-        message: addedLeads.length > 0
-          ? `Added ${addedLeads.length} leads from ${firms.length} firms found in ${area} via OpenStreetMap`
-          : `Found ${firms.length} firms in ${area} but all already exist in your database`,
-      });
-    } catch (err) {
-      console.error('OSM area search error:', err);
-      return NextResponse.json({ error: 'Area search failed', leads: [] }, { status: 500 });
+    const priority = tierFromTitle(contactTitle);
+    const result = await run(
+      `INSERT INTO leads (company_name, contact_name, contact_title, city, state, area, linkedin_url, email, phone, phone_fetched, priority, project_type, batch_number, status, user_id, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`,
+      [companyName, contactName, contactTitle, city, '', leadArea, linkedinUrl, email, phone, phone ? 1 : 0, priority, null, batchNum, session.userId, notes]
+    );
+    const rows = await query('SELECT * FROM leads WHERE id = ?', [result.lastInsertRowid]);
+    if (rows[0]) {
+      existingUrls.add(linkedinUrl || '');
+      existingCombos.add(`${contactName}|${companyName}`);
+      return rows[0];
     }
+    return null;
   }
 
-  // ── APOLLO PATH (city-level, no area) ─────────────────────────────────────
-  try {
-    const searchBody: Record<string, unknown> = {
-      q_person_title_fuzzy_match: true,
-      person_titles: TITLES,
-      person_locations: [location],
-      q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
-      per_page: Math.min(count, 25),
-      page,
-    };
+  // ── AREA SEARCH ──────────────────────────────────────────────────────────────
+  if (area) {
+    const areaLower = area.toLowerCase();
+    const addedLeads = [];
 
+    // Step 1: OSM — try to find firm names near the geocoded area
+    let osmFirms: Array<{ name: string; address: string; phone: string | null }> = [];
+    try {
+      const coords = await geocodeArea(area, city);
+      if (coords) {
+        osmFirms = await findFirmsNearby(coords.lat, coords.lon, 3000);
+      }
+    } catch { /* OSM is optional */ }
+
+    // Process OSM firms
+    for (const firm of osmFirms) {
+      if (addedLeads.length >= count) break;
+      const alreadyExists = [...existingCombos].some(c => c.endsWith(`|${firm.name}`));
+      if (alreadyExists) continue;
+
+      const person = await matchApolloContact(firm.name, apolloKey);
+      const contactName = person?.name
+        || `${person?.first_name || ''} ${person?.last_name || ''}`.trim()
+        || `${firm.name} — Contact Needed`;
+      const contactTitle = person?.title || 'Architect';
+      const linkedinUrl = person?.linkedin_url || null;
+      const email = person?.email || null;
+      const phone = extractPhone(person, firm.phone);
+
+      const lead = await insertLead(firm.name, contactName, contactTitle, phone, email, linkedinUrl, area,
+        firm.address ? `Found via OpenStreetMap in ${area}: ${firm.address}` : `Found via OpenStreetMap in ${area}`);
+      if (lead) addedLeads.push(lead);
+    }
+
+    // Step 2: Apollo city-level search — ALWAYS runs, fills remaining slots
+    // Post-filter prefers area matches but falls back to all city results
+    if (addedLeads.length < count) {
+      const needed = count - addedLeads.length;
+      try {
+        const apolloRes = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
+          body: JSON.stringify({
+            q_person_title_fuzzy_match: true,
+            person_titles: TITLES,
+            person_locations: [location],
+            q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
+            per_page: 25,
+            page,
+          }),
+        });
+
+        if (apolloRes.ok) {
+          const apolloData = await apolloRes.json();
+          let people: ApolloPerson[] = apolloData?.people || [];
+
+          // Prefer results where address/city mentions the area
+          const areaMatches = people.filter((p: ApolloPerson) => {
+            const orgAddr = (p.organization?.raw_address || '').toLowerCase();
+            const orgCity = (p.organization?.city || '').toLowerCase();
+            const personCity = (p.city || '').toLowerCase();
+            return orgAddr.includes(areaLower) || orgCity.includes(areaLower) || personCity.includes(areaLower);
+          });
+          // Put area matches first; if none matched, use all city results
+          people = areaMatches.length > 0
+            ? [...areaMatches, ...people.filter(p => !areaMatches.includes(p))]
+            : people;
+
+          for (const person of people) {
+            if (addedLeads.length >= count) break;
+            const companyName = person.organization?.name || person.employment_history?.[0]?.organization_name || 'Unknown';
+            const contactName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim();
+            if (!contactName || contactName === 'Unknown' || companyName === 'Unknown') continue;
+
+            const phones: Array<{ raw_number: string; type: string }> = person.phone_numbers || [];
+            const phone = phones.find((p: { type: string }) => p.type === 'mobile')?.raw_number || phones[0]?.raw_number || null;
+            const leadArea = areaMatches.includes(person) ? area : (person.city || area);
+
+            const lead = await insertLead(
+              companyName, contactName, person.title || 'Architect',
+              phone, person.email || null, person.linkedin_url || null,
+              leadArea,
+              areaMatches.includes(person) ? null : `Generated for ${area} — city-wide result`
+            );
+            if (lead) addedLeads.push(lead);
+          }
+
+          // If still short, try next page automatically
+          if (addedLeads.length < needed && people.length === 25) {
+            const nextRes = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
+              body: JSON.stringify({
+                q_person_title_fuzzy_match: true,
+                person_titles: TITLES,
+                person_locations: [location],
+                q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
+                per_page: 25,
+                page: page + 1,
+              }),
+            });
+            if (nextRes.ok) {
+              const nextData = await nextRes.json();
+              for (const person of (nextData?.people || [])) {
+                if (addedLeads.length >= count) break;
+                const companyName = person.organization?.name || person.employment_history?.[0]?.organization_name || 'Unknown';
+                const contactName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim();
+                if (!contactName || contactName === 'Unknown' || companyName === 'Unknown') continue;
+                const phones: Array<{ raw_number: string; type: string }> = person.phone_numbers || [];
+                const phone = phones.find((p: { type: string }) => p.type === 'mobile')?.raw_number || phones[0]?.raw_number || null;
+                const lead = await insertLead(companyName, contactName, person.title || 'Architect', phone, person.email || null, person.linkedin_url || null, area, `Generated for ${area} — city-wide result`);
+                if (lead) addedLeads.push(lead);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Apollo area fallback error:', err);
+      }
+    }
+
+    if (addedLeads.length > 0) {
+      await run('INSERT OR REPLACE INTO settings VALUES (?, ?)', [`last_batch_${session.userId}`, String(batchNum)]);
+    }
+
+    const osmCount = osmFirms.length;
+    const message = addedLeads.length > 0
+      ? osmCount > 0
+        ? `Added ${addedLeads.length} leads — ${osmCount} firm${osmCount !== 1 ? 's' : ''} found in ${area} via map data, rest filled from ${city}`
+        : `Added ${addedLeads.length} leads for ${area} (sourced from ${city} — map data for this area is limited)`
+      : 'All found leads already exist in your database';
+
+    return NextResponse.json({ leads: addedLeads, added: addedLeads.length, searched: osmCount, message });
+  }
+
+  // ── CITY-LEVEL APOLLO SEARCH (no area) ───────────────────────────────────────
+  try {
     const res = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
-      body: JSON.stringify(searchBody),
+      body: JSON.stringify({
+        q_person_title_fuzzy_match: true,
+        person_titles: TITLES,
+        person_locations: [location],
+        q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
+        per_page: Math.min(count, 25),
+        page,
+      }),
     });
 
     if (!res.ok) {
@@ -285,49 +369,23 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const people = data?.people || [];
+    const people: ApolloPerson[] = data?.people || [];
 
     if (people.length === 0) {
       return NextResponse.json({ leads: [], message: 'No new leads found from Apollo for your city.' });
     }
 
     const addedLeads = [];
-
     for (const person of people) {
-      const linkedinUrl = person.linkedin_url || null;
       const companyName = person.organization?.name || person.employment_history?.[0]?.organization_name || 'Unknown';
       const contactName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim();
-      const contactTitle = person.title || 'Architect';
-
-      if (linkedinUrl && existingUrls.has(linkedinUrl)) continue;
-      if (existingCombos.has(`${contactName}|${companyName}`)) continue;
       if (!contactName || contactName === 'Unknown' || companyName === 'Unknown') continue;
 
-      const email = person.email || null;
       const phones: Array<{ raw_number: string; type: string }> = person.phone_numbers || [];
-      const phone = phones.find(p => p.type === 'mobile')?.raw_number || phones[0]?.raw_number || null;
-      const priority = tierFromTitle(contactTitle);
-      const projectType = person.organization?.keywords?.slice(0, 2).join(' & ') || null;
-      const personArea = person.city || null;
+      const phone = phones.find((p: { type: string }) => p.type === 'mobile')?.raw_number || phones[0]?.raw_number || null;
 
-      const result = await run(
-        `INSERT INTO leads (company_name, contact_name, contact_title, city, state, area, linkedin_url, email, phone, phone_fetched, priority, project_type, batch_number, status, user_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)`,
-        [
-          companyName, contactName, contactTitle,
-          city, '', personArea,
-          linkedinUrl, email, phone, phone ? 1 : 0,
-          priority, projectType,
-          batchNum, session.userId,
-        ]
-      );
-
-      const newLead = await query('SELECT * FROM leads WHERE id = ?', [result.lastInsertRowid]);
-      if (newLead[0]) {
-        addedLeads.push(newLead[0]);
-        existingUrls.add(linkedinUrl || '');
-        existingCombos.add(`${contactName}|${companyName}`);
-      }
+      const lead = await insertLead(companyName, contactName, person.title || 'Architect', phone, person.email || null, person.linkedin_url || null, person.city || null, null);
+      if (lead) addedLeads.push(lead);
     }
 
     if (addedLeads.length > 0) {
