@@ -186,15 +186,8 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
     }
   }
 
-  // Calendar ICS link — always available, defaults to tomorrow if no date
   const calendarUrl = `/api/calendar/${lead.id}`;
-
-  // WhatsApp — always available
-  // With phone: direct WA link. Without phone: WA compose link (user picks contact)
-  const waMessage = getWhatsAppUrl(lead.phone || '0', lead.contact_name, lead.company_name, lead.status, lead.project_type);
-  const waUrl = lead.phone
-    ? waMessage
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(waMessage.split('text=')[1] || '')}`;
+  const waUrl = getWhatsAppUrl(lead.phone || '', lead.contact_name, lead.company_name, lead.status, lead.project_type);
 
   const overdue = lead.next_action_date && isOverdue(lead.next_action_date)
     && !['converted', 'not_interested'].includes(lead.status);
