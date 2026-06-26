@@ -100,19 +100,31 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Lookup failed'); setLookupState('idle'); return; }
-      if (data.phone || data.email) {
-        toast.success(`Found: ${data.phone || data.email}`);
+
+      if (data.phone) {
+        // Phone found — best case
+        toast.success(`Phone found: ${data.phone}`);
         setLookupState('found');
-        const updated = { ...lead, phone: data.phone || lead.phone, email: data.email || lead.email, phone_fetched: 1 };
+        const updated = { ...lead, phone: data.phone, email: data.email || lead.email, phone_fetched: 1 };
         setLead(updated);
         onUpdate(updated);
+        setExpanded(true);
+      } else if (data.email && !lead.email) {
+        // Email found but no phone — save email, show manual entry + replace option
+        toast.info(`Email found (no phone). Enter number manually or replace lead.`);
+        setLookupState('not-found');
+        const updated = { ...lead, email: data.email, phone_fetched: 1 };
+        setLead(updated);
+        onUpdate(updated);
+        setExpanded(true);
       } else {
-        toast.info('Not found in Apollo — enter number manually below');
+        // Nothing found
+        toast.info('No contact info found — enter manually or replace this lead');
         setLookupState('not-found');
         const updated = { ...lead, phone_fetched: 1 };
         setLead(updated);
         onUpdate(updated);
-        setExpanded(true); // auto-expand to show manual entry
+        setExpanded(true);
       }
     } catch (err) {
       toast.error('Lookup failed: ' + String(err));
@@ -194,12 +206,18 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
   function ActionButton() {
     if (lead.phone) {
       return (
-        <button
-          onClick={e => { e.stopPropagation(); setShowPostCall(true); }}
-          className="flex items-center gap-1.5 h-9 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shrink-0 transition-colors active:scale-95">
-          <Phone className="w-3.5 h-3.5" />
-          <span>Call</span>
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()}
+            className="flex items-center gap-1 h-9 px-2 bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 rounded-l-xl text-[11px] font-bold max-w-[90px] truncate">
+            <Phone className="w-3 h-3 shrink-0" />
+            <span className="truncate">{lead.phone}</span>
+          </a>
+          <button
+            onClick={e => { e.stopPropagation(); setShowPostCall(true); }}
+            className="h-9 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-r-xl text-xs font-bold shrink-0 transition-colors active:scale-95">
+            Log
+          </button>
+        </div>
       );
     }
     if (lookupState === 'loading') {
@@ -211,11 +229,17 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
     }
     if (lookupState === 'not-found') {
       return (
-        <button onClick={handleReplace} disabled={replacing}
-          className="flex items-center gap-1.5 h-9 px-2.5 bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 rounded-xl text-xs font-semibold shrink-0 transition-colors disabled:opacity-50">
-          {replacing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-          <span>Replace</span>
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={e => { e.stopPropagation(); setExpanded(true); }}
+            className="h-9 px-2 bg-zinc-700/50 border border-zinc-600/40 text-zinc-400 rounded-l-xl text-[10px] font-semibold transition-colors">
+            No #
+          </button>
+          <button onClick={handleReplace} disabled={replacing}
+            className="flex items-center gap-1 h-9 px-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 rounded-r-xl text-xs font-semibold shrink-0 transition-colors disabled:opacity-50">
+            {replacing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+            Swap
+          </button>
+        </div>
       );
     }
     return (
@@ -252,7 +276,7 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
                 )}
               </div>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span className="text-xs text-foreground/70 font-medium truncate max-w-[120px]">{lead.company_name}</span>
+                <span className="text-xs text-foreground/70 font-medium truncate max-w-[110px]">{lead.company_name}</span>
                 {lead.area && (
                   <>
                     <span className="text-border">·</span>
@@ -265,6 +289,12 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
                     <span className={`text-xs flex items-center gap-0.5 ${overdue ? 'text-orange-400' : 'text-muted-foreground'}`}>
                       <Calendar className="w-2.5 h-2.5" />{overdue ? 'Due ' : ''}{formatDate(lead.next_action_date)}
                     </span>
+                  </>
+                )}
+                {lead.email && !lead.phone && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="text-xs text-sky-400 flex items-center gap-0.5"><Mail className="w-2.5 h-2.5" />email only</span>
                   </>
                 )}
               </div>

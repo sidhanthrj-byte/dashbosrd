@@ -11,9 +11,19 @@ const CITY_LOCATIONS: Record<string, string> = {
 };
 
 const TITLES = [
+  // Founders / directors
   'Principal Architect', 'Founder', 'Co-Founder', 'Director',
-  'Senior Architect', 'Interior Designer', 'Design Director',
-  'Partner', 'Managing Director', 'Chief Architect',
+  'Managing Director', 'Chief Architect', 'Partner', 'Design Director',
+  'Associate Director', 'Creative Director',
+  // Architects (all levels)
+  'Architect', 'Senior Architect', 'Associate Architect', 'Project Architect',
+  'Architectural Designer', 'Design Architect',
+  // Interior design
+  'Interior Designer', 'Senior Interior Designer', 'Lead Interior Designer',
+  'Interior Design Lead', 'Space Designer', 'Concept Designer',
+  // Project / design leads
+  'Head of Projects', 'Project Manager', 'Design Manager', 'Design Lead',
+  'Studio Manager', 'Design Consultant',
 ];
 
 function tierFromTitle(title: string): string {
