@@ -64,16 +64,17 @@ export const DT8_150W: DriverSpec = {
 }
 
 export const CONTROLS: Record<string, Price> = {
-  'DA4m':                        { dealer: 1800, msp: 2300, specifiors: 2100 },
-  'Controller Single Colour':    { dealer: 1300, msp: 1600, specifiors: 1500 },
-  'Controller Tunable/RGB':      { dealer: 1500, msp: 1900, specifiors: 1700 },
-  'Remote Single Colour':        { dealer: 1600, msp: 2000, specifiors: 1800 },
-  'Remote Tunable/RGB':          { dealer: 1700, msp: 2100, specifiors: 1900 },
-  'Power Repeater Single Colour':{ dealer: 1700, msp: 2000, specifiors: 1900 },
-  'Power Repeater Tunable/RGB':  { dealer: 1800, msp: 2100, specifiors: 2000 },
+  'DA4m':                         { dealer: 1800, msp: 2300, specifiors: 2100 },
+  'Controller Single Colour':     { dealer: 1300, msp: 1600, specifiors: 1500 },
+  'Controller Tunable/RGB':       { dealer: 1500, msp: 1900, specifiors: 1700 },
+  'Remote Single Colour':         { dealer: 1600, msp: 2000, specifiors: 1800 },
+  'Remote Tunable/RGB':           { dealer: 1700, msp: 2100, specifiors: 1900 },
+  'Power Repeater Single Colour': { dealer: 1700, msp: 2000, specifiors: 1900 },
+  'Power Repeater Tunable/RGB':   { dealer: 1800, msp: 2100, specifiors: 2000 },
 }
 
 export const FLEECE: Price = { dealer: 500, msp: 1000, specifiors: 700 }
+
 export const ROLL_WIDTHS = [2, 3, 4, 5]
 
 export function p(price: Price, tier: PriceTier): number {

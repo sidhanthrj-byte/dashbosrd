@@ -4,6 +4,7 @@ export type UnitSystem = 'feet' | 'meters'
 export type LightType = 'none' | 'single_color' | 'single_color_dimmable' | 'tunable' | 'rgb' | 'rgbw'
 export type GripperType = 'CW' | 'CC' | 'Profile' | 'Flexible CW' | 'Flexible CC'
 export type LEDWidth = 'standard' | 'wider'
+export type SurfaceType = 'ceiling' | 'wall'
 
 export interface RectDims { length: number; width: number }
 export interface CircleDims { diameter: number }
@@ -11,7 +12,6 @@ export interface TriangleDims { base: number; height: number; side1: number; sid
 export interface LShaperDims { length1: number; width1: number; length2: number; width2: number }
 
 export type ShapeDimensions = RectDims | CircleDims | TriangleDims | LShaperDims
-export type SurfaceType = 'ceiling' | 'wall'
 
 export interface CeilingItem {
   id: string
@@ -45,8 +45,8 @@ export interface Quote {
   items: CeilingItem[]
   installationRatePerSqft: number
   notes: string
-  grandTotal?: number
-  userId?: number
+  grandTotal: number
+  userId?: number | null
   createdAt: string
   updatedAt: string
 }
