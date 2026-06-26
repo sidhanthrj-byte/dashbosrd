@@ -160,27 +160,28 @@ export async function POST(req: NextRequest) {
 
   await initDb();
 
-  if (replace_lead_id) {
-    await run("UPDATE leads SET archived = 1, updated_at = datetime('now') WHERE id = ? AND user_id = ?",
-      [replace_lead_id, session.userId]);
-  }
-
   const city = session.city;
+  const userId = session.userId;
   const location = CITY_LOCATIONS[city] || city;
 
+  if (replace_lead_id) {
+    await run("UPDATE leads SET archived = 1, updated_at = datetime('now') WHERE id = ? AND user_id = ?",
+      [replace_lead_id, userId]);
+  }
+
   const existing = await query<{ linkedin_url: string }>(
-    'SELECT linkedin_url FROM leads WHERE user_id = ? AND linkedin_url IS NOT NULL', [session.userId]
+    'SELECT linkedin_url FROM leads WHERE user_id = ? AND linkedin_url IS NOT NULL', [userId]
   );
   const existingUrls = new Set(existing.map(r => r.linkedin_url));
 
   const existingNames = await query<{ contact_name: string; company_name: string }>(
-    'SELECT contact_name, company_name FROM leads WHERE user_id = ?', [session.userId]
+    'SELECT contact_name, company_name FROM leads WHERE user_id = ?', [userId]
   );
   const existingCombos = new Set(existingNames.map(r => `${r.contact_name}|${r.company_name}`));
 
   let batchNum = 2;
   const batchSetting = await query<{ value: string }>(
-    'SELECT value FROM settings WHERE key = ?', [`last_batch_${session.userId}`]
+    'SELECT value FROM settings WHERE key = ?', [`last_batch_${userId}`]
   );
   if (batchSetting[0]) batchNum = parseInt(batchSetting[0].value) + 1;
 
@@ -201,7 +202,7 @@ export async function POST(req: NextRequest) {
     const result = await run(
       `INSERT INTO leads (company_name, contact_name, contact_title, city, state, area, linkedin_url, email, phone, phone_fetched, priority, project_type, batch_number, status, user_id, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`,
-      [companyName, contactName, contactTitle, city, '', leadArea, linkedinUrl, email, phone, phone ? 1 : 0, priority, null, batchNum, session.userId, notes]
+      [companyName, contactName, contactTitle, city, '', leadArea, linkedinUrl, email, phone, phone ? 1 : 0, priority, null, batchNum, userId, notes]
     );
     const rows = await query('SELECT * FROM leads WHERE id = ?', [result.lastInsertRowid]);
     if (rows[0]) {
@@ -334,7 +335,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (addedLeads.length > 0) {
-      await run('INSERT OR REPLACE INTO settings VALUES (?, ?)', [`last_batch_${session.userId}`, String(batchNum)]);
+      await run('INSERT OR REPLACE INTO settings VALUES (?, ?)', [`last_batch_${userId}`, String(batchNum)]);
     }
 
     const osmCount = osmFirms.length;
@@ -389,7 +390,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (addedLeads.length > 0) {
-      await run('INSERT OR REPLACE INTO settings VALUES (?, ?)', [`last_batch_${session.userId}`, String(batchNum)]);
+      await run('INSERT OR REPLACE INTO settings VALUES (?, ?)', [`last_batch_${userId}`, String(batchNum)]);
     }
 
     return NextResponse.json({
