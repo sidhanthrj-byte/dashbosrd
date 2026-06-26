@@ -4,21 +4,23 @@ import { getQuoteById, saveQuote, deleteQuote } from '@/lib/quote-store'
 import { calculateQuote } from '@/lib/quote-calculations'
 import type { Quote } from '@/lib/quote-types'
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const quote = await getQuoteById(params.id, session.userId)
+  const { id } = await params
+  const quote = await getQuoteById(id, session.userId)
   if (!quote) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   return NextResponse.json({ quote })
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const existing = await getQuoteById(params.id, session.userId)
+  const { id } = await params
+  const existing = await getQuoteById(id, session.userId)
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json() as Partial<Quote>
@@ -40,13 +42,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json({ quote: saved })
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const existing = await getQuoteById(params.id, session.userId)
+  const { id } = await params
+  const existing = await getQuoteById(id, session.userId)
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  await deleteQuote(params.id, session.userId)
+  await deleteQuote(id, session.userId)
   return NextResponse.json({ ok: true })
 }
