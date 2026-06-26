@@ -30,11 +30,11 @@ export function Sidebar({ current, onNavigate, userName, userCity, onLogout }: P
   }, []);
 
   const items: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'leads',     label: 'All Leads',  icon: <Users className="w-4 h-4" /> },
-    { id: 'pipeline',  label: 'Pipeline',   icon: <KanbanSquare className="w-4 h-4" /> },
-    { id: 'today',     label: "Today's Tasks", icon: <Clock className="w-4 h-4" />, badge: todayCount },
-    { id: 'quotes',    label: 'Quotations', icon: <FileText className="w-4 h-4" /> },
+    { id: 'dashboard', label: 'Dashboard',      icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'leads',     label: 'All Leads',       icon: <Users className="w-4 h-4" /> },
+    { id: 'pipeline',  label: 'Pipeline',        icon: <KanbanSquare className="w-4 h-4" /> },
+    { id: 'today',     label: "Today's Tasks",   icon: <Clock className="w-4 h-4" />, badge: todayCount },
+    { id: 'quotes',    label: 'Quotations',      icon: <FileText className="w-4 h-4" /> },
   ];
 
   return (
