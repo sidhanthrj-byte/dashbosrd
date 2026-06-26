@@ -67,6 +67,26 @@ export async function initDb(): Promise<void> {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS quotes (
+      id TEXT PRIMARY KEY,
+      quote_number TEXT NOT NULL,
+      lead_id INTEGER REFERENCES leads(id),
+      client_name TEXT NOT NULL,
+      project_name TEXT,
+      location TEXT,
+      date TEXT NOT NULL,
+      valid_until TEXT,
+      price_tier TEXT NOT NULL DEFAULT 'msp',
+      markup_percent REAL DEFAULT 0,
+      installation_rate_per_sqft REAL DEFAULT 60,
+      items_json TEXT NOT NULL DEFAULT '[]',
+      notes TEXT,
+      grand_total REAL DEFAULT 0,
+      user_id INTEGER REFERENCES users(id),
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Migrations for existing DBs

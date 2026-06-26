@@ -8,6 +8,7 @@ import { Dashboard } from './Dashboard';
 import { LeadsView } from './LeadsView';
 import { PipelineView } from './PipelineView';
 import { TodayView } from './TodayView';
+import { QuotesView } from './QuotesView';
 
 export function CRMApp() {
   const [view, setView] = useState<View>('dashboard');
@@ -53,6 +54,7 @@ export function CRMApp() {
         {view === 'leads'     && <LeadsView onNavigateToday={() => setView('today')} />}
         {view === 'pipeline'  && <PipelineView />}
         {view === 'today'     && <TodayView />}
+        {view === 'quotes'    && <QuotesView />}
       </main>
 
       {/* Bottom nav — mobile only */}
