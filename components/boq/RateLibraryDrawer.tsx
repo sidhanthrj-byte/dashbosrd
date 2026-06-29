@@ -60,7 +60,7 @@ export function RateLibraryDrawer({ open, onClose, onAdd }: Props) {
         <div className="px-5 py-4 border-b border-border flex items-center gap-3">
           <div className="flex-1">
             <h2 className="text-sm font-bold text-foreground">Rate Library</h2>
-            <p className="text-[10px] text-muted-foreground mt-0.5">150+ items · Indian market rates</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">280+ items across 22 categories · Indian market rates</p>
           </div>
           <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors">
             <X className="w-4 h-4" />

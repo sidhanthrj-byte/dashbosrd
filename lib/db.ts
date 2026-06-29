@@ -38,6 +38,8 @@ export async function initDb(): Promise<void> {
       markup_percent REAL DEFAULT 0,
       discount_amount REAL DEFAULT 0,
       notes TEXT,
+      inclusions TEXT,
+      exclusions TEXT,
       user_id INTEGER REFERENCES users(id),
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
@@ -48,6 +50,7 @@ export async function initDb(): Promise<void> {
       project_id INTEGER NOT NULL REFERENCES boq_projects(id),
       name TEXT NOT NULL,
       area REAL,
+      notes TEXT,
       sort_order INTEGER DEFAULT 0
     );
 
@@ -57,6 +60,7 @@ export async function initDb(): Promise<void> {
       category TEXT NOT NULL DEFAULT 'Civil',
       description TEXT NOT NULL,
       specification TEXT,
+      remarks TEXT,
       unit TEXT NOT NULL DEFAULT 'sqft',
       quantity REAL NOT NULL DEFAULT 0,
       rate REAL NOT NULL DEFAULT 0,
@@ -64,6 +68,17 @@ export async function initDb(): Promise<void> {
       sort_order INTEGER DEFAULT 0
     );
   `);
+
+  // Add new columns to existing tables (safe — ignored if already exist)
+  const migrations = [
+    `ALTER TABLE boq_projects ADD COLUMN inclusions TEXT`,
+    `ALTER TABLE boq_projects ADD COLUMN exclusions TEXT`,
+    `ALTER TABLE boq_sections ADD COLUMN notes TEXT`,
+    `ALTER TABLE boq_items ADD COLUMN remarks TEXT`,
+  ];
+  for (const sql of migrations) {
+    try { await db.execute(sql); } catch { /* column already exists */ }
+  }
 }
 
 export async function query<T>(sql: string, args?: InArgs): Promise<T[]> {

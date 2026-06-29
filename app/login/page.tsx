@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText } from 'lucide-react';
 
 const CITIES = [
   'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai',
   'Pune', 'Ahmedabad', 'Kolkata', 'Jaipur', 'Surat',
+  'Chandigarh', 'Kochi', 'Indore', 'Nagpur', 'Lucknow',
 ];
 
 export default function LoginPage() {
@@ -14,10 +14,8 @@ export default function LoginPage() {
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [name, setName] = useState('');
   const [firmName, setFirmName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
@@ -26,8 +24,7 @@ export default function LoginPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -40,8 +37,7 @@ export default function LoginPage() {
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -53,100 +49,175 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-4">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-amber-500/5 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen flex" style={{ background: 'oklch(0.055 0.010 265)' }}>
+      {/* Left panel — blueprint grid decoration */}
+      <div className="hidden lg:flex flex-col justify-between w-[440px] shrink-0 p-12 relative overflow-hidden"
+        style={{ background: 'oklch(0.042 0.008 265)', borderRight: '1px solid oklch(0.14 0.012 265)' }}>
+        {/* Grid pattern */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(oklch(0.14 0.012 265 / 0.4) 1px, transparent 1px),
+            linear-gradient(90deg, oklch(0.14 0.012 265 / 0.4) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+        }} />
+        {/* Glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full"
+          style={{ background: 'radial-gradient(circle, oklch(0.70 0.22 268 / 0.12) 0%, transparent 70%)' }} />
 
-      <div className="w-full max-w-md relative">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 mb-4 shadow-2xl shadow-amber-500/30">
-            <FileText className="w-7 h-7 text-black" />
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
+              style={{ background: 'oklch(0.70 0.22 268)', color: 'white' }}>B</div>
+            <span className="font-bold text-white text-sm tracking-tight">BOQwise</span>
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">BOQwise</h1>
-          <p className="text-sm text-zinc-500 mt-1.5">Professional BOQ software for architects &amp; interior designers</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-[#111] border border-[#222] rounded-2xl overflow-hidden shadow-2xl shadow-black/60">
-          <div className="flex border-b border-[#1e1e1e]">
+        <div className="relative space-y-8">
+          <div>
+            <h2 className="text-3xl font-bold leading-tight mb-4" style={{ color: 'oklch(0.96 0.004 265)' }}>
+              Professional BOQ software for Indian architects
+            </h2>
+            <p className="text-sm leading-relaxed" style={{ color: 'oklch(0.52 0.018 265)' }}>
+              Create detailed Bills of Quantities in minutes, not hours. 150+ pre-priced items for every room and material.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              { icon: '⬡', label: '150+ pre-priced rate library items' },
+              { icon: '⬡', label: 'GST-aware calculations, markup & discount' },
+              { icon: '⬡', label: 'Professional PDF export in one click' },
+              { icon: '⬡', label: 'Section-wise breakdown for every room' },
+            ].map(f => (
+              <div key={f.label} className="flex items-center gap-3">
+                <span style={{ color: 'oklch(0.70 0.22 268)' }} className="text-xs">{f.icon}</span>
+                <span className="text-xs" style={{ color: 'oklch(0.65 0.015 265)' }}>{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative">
+          <p className="text-[10px]" style={{ color: 'oklch(0.35 0.012 265)' }}>
+            BOQwise © {new Date().getFullYear()} · Built for the Indian architecture & interior design industry
+          </p>
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-2.5 mb-8">
+            <div className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-black text-white"
+              style={{ background: 'oklch(0.70 0.22 268)' }}>B</div>
+            <span className="font-bold text-white text-sm">BOQwise</span>
+          </div>
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-white mb-1.5">
+              {tab === 'signin' ? 'Welcome back' : 'Create your account'}
+            </h1>
+            <p className="text-sm" style={{ color: 'oklch(0.52 0.018 265)' }}>
+              {tab === 'signin'
+                ? 'Sign in to your BOQwise account'
+                : 'Start creating professional BOQs in minutes'}
+            </p>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex rounded-lg p-1 mb-6" style={{ background: 'oklch(0.085 0.013 265)' }}>
             {(['signin', 'signup'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => { setTab(t); setError(''); }}
-                className={`flex-1 py-3.5 text-sm font-medium transition-colors ${
-                  tab === t
-                    ? 'text-amber-400 border-b-2 border-amber-500 bg-amber-500/5'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
+                className="flex-1 py-2 text-xs font-semibold rounded-md transition-all duration-200"
+                style={tab === t
+                  ? { background: 'oklch(0.70 0.22 268)', color: 'white' }
+                  : { color: 'oklch(0.52 0.018 265)' }}
               >
                 {t === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
             ))}
           </div>
 
-          <div className="p-6">
-            {error && (
-              <div className="mb-4 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                {error}
+          {error && (
+            <div className="mb-4 px-3 py-2.5 rounded-lg text-xs"
+              style={{ background: 'oklch(0.64 0.22 25 / 0.12)', border: '1px solid oklch(0.64 0.22 25 / 0.25)', color: 'oklch(0.75 0.16 25)' }}>
+              {error}
+            </div>
+          )}
+
+          {tab === 'signin' ? (
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <Field label="Email address" type="email" value={email} onChange={setEmail} placeholder="you@studio.com" />
+              <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
+              <SubmitBtn loading={loading} label="Sign In →" />
+            </form>
+          ) : (
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Your name" type="text" value={name} onChange={setName} placeholder="Ar. Priya Sharma" required />
+                <Field label="City" type="select" value={city} onChange={setCity} options={CITIES} />
               </div>
-            )}
+              <Field label="Firm / Studio name" type="text" value={firmName} onChange={setFirmName} placeholder="PS Design Studio" />
+              <Field label="Email address" type="email" value={signupEmail} onChange={setSignupEmail} placeholder="studio@example.com" required />
+              <Field label="Password" type="password" value={signupPassword} onChange={setSignupPassword} placeholder="Min. 6 characters" required minLength={6} />
+              <SubmitBtn loading={loading} label="Create Account →" />
+            </form>
+          )}
 
-            {tab === 'signin' ? (
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@studio.com" />
-                <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
-                <SubmitBtn loading={loading} label="Sign In" />
-              </form>
-            ) : (
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <Field label="Your Name" type="text" value={name} onChange={setName} placeholder="Ar. Priya Sharma" required />
-                <Field label="Firm / Studio Name" type="text" value={firmName} onChange={setFirmName} placeholder="PS Architects & Interiors" />
-                <Field label="Email" type="email" value={signupEmail} onChange={setSignupEmail} placeholder="studio@example.com" required />
-                <Field label="Password" type="password" value={signupPassword} onChange={setSignupPassword} placeholder="Min. 6 characters" required minLength={6} />
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">City</label>
-                  <select
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors"
-                  >
-                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <SubmitBtn loading={loading} label="Create Account" />
-              </form>
-            )}
-          </div>
+          <p className="text-center text-[11px] mt-6" style={{ color: 'oklch(0.35 0.012 265)' }}>
+            By continuing you agree to our Terms of Service
+          </p>
         </div>
-
-        <p className="text-center text-xs text-zinc-700 mt-6">
-          BOQwise &copy; {new Date().getFullYear()} · Built for the Indian architecture &amp; design industry
-        </p>
       </div>
     </div>
   );
 }
 
 function Field({
-  label, type, value, onChange, placeholder, required, minLength
+  label, type, value, onChange, placeholder, required, minLength, options
 }: {
   label: string; type: string; value: string;
-  onChange: (v: string) => void; placeholder?: string; required?: boolean; minLength?: number;
+  onChange: (v: string) => void; placeholder?: string;
+  required?: boolean; minLength?: number; options?: string[];
 }) {
+  const base = {
+    background: 'oklch(0.10 0.012 265)',
+    border: '1px solid oklch(0.18 0.014 265)',
+    borderRadius: '0.5rem',
+    color: 'white',
+    fontSize: '13px',
+    outline: 'none',
+    transition: 'border-color 0.15s',
+    width: '100%',
+    padding: '10px 14px',
+  } as React.CSSProperties;
+
   return (
     <div>
-      <label className="block text-xs font-medium text-zinc-400 mb-1.5">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        required={required}
-        minLength={minLength}
-        placeholder={placeholder}
-        className="w-full px-3.5 py-2.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-colors"
-      />
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'oklch(0.60 0.018 265)', marginBottom: '6px' }}>
+        {label}
+      </label>
+      {type === 'select' ? (
+        <select value={value} onChange={e => onChange(e.target.value)} style={base}>
+          {options?.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          required={required}
+          minLength={minLength}
+          placeholder={placeholder}
+          style={base}
+          onFocus={e => { e.currentTarget.style.borderColor = 'oklch(0.70 0.22 268 / 0.6)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'oklch(0.18 0.014 265)'; }}
+        />
+      )}
     </div>
   );
 }
@@ -156,9 +227,15 @@ function SubmitBtn({ loading, label }: { loading: boolean; label: string }) {
     <button
       type="submit"
       disabled={loading}
-      className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+      className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 disabled:opacity-50 mt-2"
+      style={{ background: 'oklch(0.70 0.22 268)', color: 'white' }}
     >
-      {loading ? 'Please wait...' : label}
+      {loading ? (
+        <span className="flex items-center justify-center gap-2">
+          <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          Please wait...
+        </span>
+      ) : label}
     </button>
   );
 }
