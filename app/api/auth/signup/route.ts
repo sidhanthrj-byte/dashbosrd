@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { initDb, query, run, seedLeadsForUser } from '@/lib/db';
+import { initDb, query, run } from '@/lib/db';
 import { createSession, COOKIE } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
-  const { name, email, password, city } = await req.json();
+  const { name, email, password, firm_name, city } = await req.json();
   if (!name || !email || !password || !city) {
     return NextResponse.json({ error: 'All fields required' }, { status: 400 });
   }
@@ -15,13 +15,11 @@ export async function POST(req: NextRequest) {
   }
   const hash = await bcrypt.hash(password, 10);
   const result = await run(
-    'INSERT INTO users (name, email, password_hash, city) VALUES (?, ?, ?, ?)',
-    [name, email.toLowerCase(), hash, city]
+    'INSERT INTO users (name, email, password_hash, firm_name, city) VALUES (?, ?, ?, ?, ?)',
+    [name, email.toLowerCase(), hash, firm_name || null, city]
   );
 
   const userId = result.lastInsertRowid;
-  await seedLeadsForUser(userId, city);
-
   const token = await createSession(userId, name, city);
   const res = NextResponse.json({ ok: true, name, city });
   res.cookies.set(COOKIE, token, {

@@ -5,9 +5,8 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'pongs-crm-jwt-secret-2026-secure'
 );
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  // Skip auth routes and static files
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/api/auth') ||

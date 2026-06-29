@@ -1,5 +1,5 @@
-import { CRMApp } from '@/components/crm/CRMApp';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <CRMApp />;
+  redirect('/boq');
 }
