@@ -8,6 +8,7 @@ import { Dashboard } from './Dashboard';
 import { LeadsView } from './LeadsView';
 import { PipelineView } from './PipelineView';
 import { TodayView } from './TodayView';
+import { CallSheetView } from './CallSheetView';
 
 export function CRMApp() {
   const [view, setView] = useState<View>('dashboard');
@@ -50,6 +51,7 @@ export function CRMApp() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden flex flex-col pb-16 md:pb-0">
         {view === 'dashboard' && <Dashboard onNavigate={setView} userName={user.name} />}
+        {view === 'calls'     && <CallSheetView />}
         {view === 'leads'     && <LeadsView onNavigateToday={() => setView('today')} />}
         {view === 'pipeline'  && <PipelineView />}
         {view === 'today'     && <TodayView />}

@@ -7,7 +7,7 @@ import { StatsBar } from './StatsBar';
 import { STATUS_CONFIG } from '@/lib/next-steps';
 import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2, Phone, PhoneOff, PhoneCall } from 'lucide-react';
 import { AddLeadModal } from './AddLeadModal';
-import { ApolloSearchModal } from './ApolloSearchModal';
+import { FindLeadsModal } from './FindLeadsModal';
 import { toast } from 'sonner';
 
 const SORT_OPTIONS = [
@@ -28,7 +28,6 @@ type Props = {
 export function LeadsView({ onNavigateToday }: Props) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -37,10 +36,7 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [statsKey, setStatsKey] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
-  const [showApolloSearch, setShowApolloSearch] = useState(false);
-  const [generateCount, setGenerateCount] = useState(10);
-  const [generateArea, setGenerateArea] = useState('');
-  const [showGeneratePanel, setShowGeneratePanel] = useState(false);
+  const [showFindLeads, setShowFindLeads] = useState(false);
   const [batchLookupRunning, setBatchLookupRunning] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ done: number; total: number; found: number } | null>(null);
   const [notFetchedCount, setNotFetchedCount] = useState<number | null>(null);
@@ -121,8 +117,8 @@ export function LeadsView({ onNavigateToday }: Props) {
     setShowAddLead(false);
   }
 
-  function handleApolloLeadAdded(lead: Lead) {
-    setLeads(prev => [lead, ...prev]);
+  function handleFindLeadsAdded(newLeads: Lead[]) {
+    setLeads(prev => [...newLeads, ...prev]);
     setStatsKey(k => k + 1);
   }
 
@@ -132,31 +128,6 @@ export function LeadsView({ onNavigateToday }: Props) {
       return newLead ? [newLead, ...filtered] : filtered;
     });
     setStatsKey(k => k + 1);
-  }
-
-  async function generateLeads() {
-    setGenerating(true);
-    setShowGeneratePanel(false);
-    try {
-      const res = await fetch('/api/leads/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ count: generateCount, page: Math.floor(Math.random() * 5) + 1, area: generateArea.trim() || undefined }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Failed to generate leads'); return; }
-      if (data.added > 0) {
-        toast.success(`${data.added} new architect leads added from Apollo!`);
-        setLeads(prev => [...data.leads, ...prev]);
-        setStatsKey(k => k + 1);
-      } else {
-        toast.info(data.message || 'No new leads found right now, try again later.');
-      }
-    } catch {
-      toast.error('Failed to generate leads');
-    } finally {
-      setGenerating(false);
-    }
   }
 
   async function batchFindPhones() {
@@ -276,16 +247,10 @@ export function LeadsView({ onNavigateToday }: Props) {
             <Plus className="w-4 h-4" />
           </button>
           <button
-            onClick={() => setShowApolloSearch(true)}
-            title="Search Apollo by name / company"
-            className="w-9 h-9 rounded-xl bg-amber-600 hover:bg-amber-500 text-white transition-colors flex items-center justify-center shrink-0">
-            <Search className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setShowGeneratePanel(!showGeneratePanel)}
-            disabled={generating}
-            className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 text-white transition-colors flex items-center justify-center shrink-0 disabled:opacity-50">
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            onClick={() => setShowFindLeads(true)}
+            title="Find leads from Apollo"
+            className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 text-white transition-colors shrink-0 text-xs font-semibold">
+            <Sparkles className="w-3.5 h-3.5" /> Get Leads
           </button>
           <button
             onClick={batchFindPhones}
@@ -320,35 +285,6 @@ export function LeadsView({ onNavigateToday }: Props) {
             </button>
           ))}
         </div>
-
-        {/* Generate panel */}
-        {showGeneratePanel && !generating && (
-          <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl space-y-2.5">
-            <p className="text-xs font-semibold text-violet-300">Generate Leads via Apollo</p>
-            <input
-              type="text"
-              placeholder="Filter by area (e.g. Bandra, Koramangala)... or leave blank for whole city"
-              value={generateArea}
-              onChange={e => setGenerateArea(e.target.value)}
-              className="w-full h-8 px-3 bg-secondary border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-violet-400/50"
-            />
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-muted-foreground">Count:</span>
-                {[10, 15, 25].map(n => (
-                  <button key={n} onClick={() => setGenerateCount(n)}
-                    className={`w-8 h-7 rounded-lg text-xs font-semibold border transition-colors ${generateCount === n ? 'bg-violet-500 text-white border-violet-400' : 'bg-secondary border-border text-muted-foreground hover:text-foreground'}`}>
-                    {n}
-                  </button>
-                ))}
-              </div>
-              <button onClick={generateLeads}
-                className="ml-auto px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors">
-                Fetch {generateCount}{generateArea.trim() ? ` in ${generateArea.trim()}` : ''}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Filter panel */}
         {showFilters && (
@@ -395,7 +331,7 @@ export function LeadsView({ onNavigateToday }: Props) {
         {/* Count row */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground">
-            {loading ? 'Loading...' : generating ? 'Fetching from Apollo...' : batchLookupRunning && batchProgress ? `Finding phones... ${batchProgress.done}/${batchProgress.total} (${batchProgress.found} found)` : `${total || leads.length} lead${(total || leads.length) !== 1 ? 's' : ''}${phoneTab === 'no_contact' ? ' without phone' : phoneTab === 'has_phone' ? ' with phone' : ''}${hasMore ? ` (showing ${leads.length})` : ''}`}
+            {loading ? 'Loading...' : batchLookupRunning && batchProgress ? `Finding phones... ${batchProgress.done}/${batchProgress.total} (${batchProgress.found} found)` : `${total || leads.length} lead${(total || leads.length) !== 1 ? 's' : ''}${phoneTab === 'no_contact' ? ' without phone' : phoneTab === 'has_phone' ? ' with phone' : ''}${hasMore ? ` (showing ${leads.length})` : ''}`}
           </span>
           {phoneTab === 'no_contact' && leads.length > 0 && !batchLookupRunning && (
             <span className="text-[11px] text-orange-400">Tap &quot;Replace&quot; to swap for a fresh lead</span>
@@ -405,12 +341,6 @@ export function LeadsView({ onNavigateToday }: Props) {
 
       {/* Leads list */}
       <div className="flex-1 overflow-y-auto px-3 md:px-5 pb-4">
-        {generating && (
-          <div className="flex items-center gap-2 py-3 text-violet-400 text-xs">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Searching Apollo for architects...
-          </div>
-        )}
         {loading && leads.length === 0 ? (
           <div className="space-y-2">
             {[...Array(6)].map((_, i) => (
@@ -441,9 +371,9 @@ export function LeadsView({ onNavigateToday }: Props) {
                     Clear filters
                   </button>
                 )}
-                <button onClick={() => setShowGeneratePanel(true)}
+                <button onClick={() => setShowFindLeads(true)}
                   className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold mx-auto transition-colors">
-                  <Sparkles className="w-4 h-4" /> Generate Leads from Apollo
+                  <Sparkles className="w-4 h-4" /> Find Leads from Apollo
                 </button>
               </>
             )}
@@ -465,7 +395,7 @@ export function LeadsView({ onNavigateToday }: Props) {
       </div>
 
       <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onAdded={handleLeadAdded} />
-      <ApolloSearchModal open={showApolloSearch} onClose={() => setShowApolloSearch(false)} onLeadAdded={handleApolloLeadAdded} />
+      <FindLeadsModal open={showFindLeads} onClose={() => setShowFindLeads(false)} onLeadsAdded={handleFindLeadsAdded} />
     </div>
   );
 }

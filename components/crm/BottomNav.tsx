@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Users, KanbanSquare, Clock } from 'lucide-react';
+import { LayoutDashboard, Users, KanbanSquare, Clock, PhoneCall } from 'lucide-react';
 import type { View } from './Sidebar';
 
 type Props = {
@@ -11,6 +11,7 @@ type Props = {
 
 const ITEMS = [
   { id: 'dashboard' as View, label: 'Home',     icon: LayoutDashboard },
+  { id: 'calls'     as View, label: 'Calls',    icon: PhoneCall },
   { id: 'leads'     as View, label: 'Leads',    icon: Users },
   { id: 'pipeline'  as View, label: 'Pipeline', icon: KanbanSquare },
   { id: 'today'     as View, label: 'Today',    icon: Clock },

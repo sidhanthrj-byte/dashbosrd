@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Users, KanbanSquare, Clock, ChevronRight, LogOut, MapPin } from 'lucide-react';
+import { LayoutDashboard, Users, KanbanSquare, Clock, PhoneCall, ChevronRight, LogOut, MapPin } from 'lucide-react';
 
-export type View = 'dashboard' | 'leads' | 'pipeline' | 'today';
+export type View = 'dashboard' | 'leads' | 'pipeline' | 'today' | 'calls';
 
 type NavItem = {
   id: View;
@@ -31,6 +31,7 @@ export function Sidebar({ current, onNavigate, userName, userCity, onLogout }: P
 
   const items: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'calls',     label: 'Call Sheet', icon: <PhoneCall className="w-4 h-4" /> },
     { id: 'leads',     label: 'All Leads',  icon: <Users className="w-4 h-4" /> },
     { id: 'pipeline',  label: 'Pipeline',   icon: <KanbanSquare className="w-4 h-4" /> },
     { id: 'today',     label: "Today's Tasks", icon: <Clock className="w-4 h-4" />, badge: todayCount },
