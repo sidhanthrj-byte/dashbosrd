@@ -155,7 +155,7 @@ export default async function PrintPage({ params }: Params) {
             table { min-width: 580px; }
             .sig-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
             .ie-grid { grid-template-columns: 1fr !important; }
-            .logo-img { height: 52px !important; }
+            .logo-img { height: 140px !important; }
             .cover-doc-type { font-size: 7pt !important; }
           }
 
@@ -209,15 +209,7 @@ export default async function PrintPage({ params }: Params) {
 
           /* Logo */
           .cover-logo { margin-bottom: auto; }
-          .logo-img { height: 72px; width: auto; max-width: 280px; object-fit: contain; }
-          .logo-fallback { display: none; }
-          .logo-fallback .lf-name {
-            font-size: 16pt; font-weight: 700; letter-spacing: 0.22em;
-            color: #fff; text-transform: uppercase;
-          }
-          .logo-fallback .lf-sub {
-            font-size: 7pt; letter-spacing: 0.18em; color: #475569; margin-top: 5px;
-          }
+          .logo-img { height: 190px; width: auto; object-fit: contain; }
 
           /* Document type marker */
           .cover-doc-type {
@@ -557,16 +549,10 @@ export default async function PrintPage({ params }: Params) {
               {/* Logo */}
               <div className="cover-logo">
                 <img
-                  src="/space-hyphen-logo.png"
+                  src="/space-hyphen-logo.svg"
                   alt="Space Hyphen Architecture"
                   className="logo-img"
-                  // @ts-expect-error onerror is valid HTML
-                  onerror="this.style.display='none';document.getElementById('logo-fb').style.display='block';"
                 />
-                <div id="logo-fb" className="logo-fallback">
-                  <div className="lf-name">Space Hyphen</div>
-                  <div className="lf-sub">Architecture  |  Interiors</div>
-                </div>
               </div>
 
               {/* Document tag */}
