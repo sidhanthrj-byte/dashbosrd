@@ -157,8 +157,8 @@ export function LeadsView({ onNavigateToday }: Props) {
     setBatchLookupRunning(true);
     setBatchProgress({ done: 0, total: 0, found: 0 });
     try {
-      // Fetch all leads that haven't been looked up yet
-      const res = await fetch('/api/leads?phone_filter=not_fetched');
+      // Fetch leads that haven't been looked up yet (cap at 100 to avoid overloading)
+      const res = await fetch('/api/leads?phone_filter=not_fetched&limit=100');
       if (!res.ok) { toast.error('Failed to fetch leads'); return; }
       const data = await res.json();
       const unfetched: Lead[] = Array.isArray(data.leads) ? data.leads : [];
@@ -179,6 +179,7 @@ export function LeadsView({ onNavigateToday }: Props) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 leadId: lead.id,
+                apolloId: lead.apollo_id,
                 linkedinUrl: lead.linkedin_url,
                 name: lead.contact_name,
                 company: lead.company_name,
@@ -208,7 +209,7 @@ export function LeadsView({ onNavigateToday }: Props) {
   }
 
   function clearFilters() {
-    setSearch(''); setStatusFilter('all'); setPriorityFilter('all'); setSort('priority');
+    setSearch(''); setStatusFilter('all'); setPriorityFilter('all'); setSort('attention');
   }
 
   function exportCSV() {

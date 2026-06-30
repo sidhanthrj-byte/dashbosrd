@@ -11,7 +11,7 @@ import { getWhatsAppUrl } from '@/lib/whatsapp';
 import {
   MapPin, Phone, Mail, Link2, Calendar, ChevronDown,
   Edit3, ExternalLink, MessageCircle, Bell, IndianRupee,
-  Search, Loader2, UserX, RefreshCw, Star, Check, StickyNote,
+  Search, Loader2, UserX, RefreshCw, Star, Check, StickyNote, Copy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -80,6 +80,7 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
   const [editingNote, setEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(lead.notes || '');
   const [savingNote, setSavingNote] = useState(false);
+  const [changingStatus, setChangingStatus] = useState<string | null>(null);
   const [nextSteps, setNextSteps] = useState<NextStep[]>(() => {
     try { return lead.ai_next_steps ? JSON.parse(lead.ai_next_steps) : []; }
     catch { return []; }
@@ -164,6 +165,34 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
     }
   }
 
+  async function quickStatus(newStatus: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (changingStatus || newStatus === lead.status) return;
+    setChangingStatus(newStatus);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      const steps = data.aiNextSteps || [];
+      handleUpdated(data.lead, steps);
+      toast.success(`Moved to: ${data.lead.status.replace(/_/g, ' ')}`);
+    } catch (err) {
+      toast.error('Failed to update: ' + String(err));
+    } finally {
+      setChangingStatus(null);
+    }
+  }
+
+  function copyPhone(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!lead.phone) return;
+    navigator.clipboard.writeText(lead.phone).then(() => toast.success('Phone copied!'));
+  }
+
   async function saveNote(e: React.MouseEvent) {
     e.stopPropagation();
     if (noteText.trim() === (lead.notes || '').trim()) { setEditingNote(false); return; }
@@ -229,10 +258,15 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
       return (
         <div className="flex items-center gap-1 shrink-0">
           <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1 h-9 px-2 bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 rounded-l-xl text-[11px] font-bold max-w-[90px] truncate">
+            className="flex items-center gap-1 h-9 px-2 bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 rounded-l-xl text-[11px] font-bold max-w-[80px] truncate">
             <Phone className="w-3 h-3 shrink-0" />
             <span className="truncate">{lead.phone}</span>
           </a>
+          <button onClick={copyPhone}
+            title="Copy number"
+            className="h-9 px-1.5 bg-emerald-600/10 border-y border-emerald-500/30 text-emerald-400/70 hover:text-emerald-300 hover:bg-emerald-500/20 text-xs transition-colors shrink-0">
+            <Copy className="w-3 h-3" />
+          </button>
           <button
             onClick={e => { e.stopPropagation(); setShowPostCall(true); }}
             className="h-9 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-r-xl text-xs font-bold shrink-0 transition-colors active:scale-95">
@@ -340,6 +374,33 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
         {/* Expanded section */}
         {expanded && !compact && (
           <div className="px-3 pb-3 border-t border-border/40 space-y-2.5 pt-2.5">
+            {/* Quick status pills */}
+            <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-none">
+              {[
+                { key: 'first_call_done', label: 'Called', color: 'text-purple-400 bg-purple-500/10 border-purple-500/25 hover:bg-purple-500/20' },
+                { key: 'call_back_requested', label: 'Call Back', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/25 hover:bg-yellow-500/20' },
+                { key: 'follow_up', label: 'Follow Up', color: 'text-orange-400 bg-orange-500/10 border-orange-500/25 hover:bg-orange-500/20' },
+                { key: 'meeting_scheduled', label: 'Meeting', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/25 hover:bg-indigo-500/20' },
+                { key: 'sample_sent', label: 'Sample', color: 'text-teal-400 bg-teal-500/10 border-teal-500/25 hover:bg-teal-500/20' },
+                { key: 'proposal_sent', label: 'Proposal', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/25 hover:bg-cyan-500/20' },
+                { key: 'negotiation', label: 'Negotiating', color: 'text-pink-400 bg-pink-500/10 border-pink-500/25 hover:bg-pink-500/20' },
+                { key: 'converted', label: '✓ Won', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25 hover:bg-emerald-500/20' },
+                { key: 'not_interested', label: 'Lost', color: 'text-red-400 bg-red-500/10 border-red-500/25 hover:bg-red-500/20' },
+                { key: 'on_hold', label: 'Hold', color: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/25 hover:bg-zinc-500/20' },
+              ].map(s => (
+                <button key={s.key}
+                  onClick={e => quickStatus(s.key, e)}
+                  disabled={changingStatus !== null}
+                  className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all whitespace-nowrap
+                    ${lead.status === s.key
+                      ? s.color + ' ring-1 ring-current/50 scale-[1.04]'
+                      : s.color + ' opacity-60 hover:opacity-100'}
+                    ${changingStatus === s.key ? 'opacity-40 scale-95' : ''}
+                  `}>
+                  {changingStatus === s.key ? '...' : s.label}
+                </button>
+              ))}
+            </div>
             {/* Primary actions row */}
             <div className="flex flex-wrap gap-1.5">
               {/* WhatsApp — always shown */}
