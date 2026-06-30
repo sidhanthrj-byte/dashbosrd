@@ -102,24 +102,22 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
       if (!res.ok) { toast.error(data.error || 'Lookup failed'); setLookupState('idle'); return; }
 
       if (data.phone) {
-        // Phone found — best case
-        toast.success(`Phone found: ${data.phone}`);
+        const src = data.source === 'website' ? 'website' : data.source === 'justdial' ? 'JustDial' : 'Apollo';
+        toast.success(`Phone found via ${src}: ${data.phone}`);
         setLookupState('found');
         const updated = { ...lead, phone: data.phone, email: data.email || lead.email, phone_fetched: 1 };
         setLead(updated);
         onUpdate(updated);
         setExpanded(true);
       } else if (data.email && !lead.email) {
-        // Email found but no phone — save email, show manual entry + replace option
-        toast.info(`Email found (no phone). Enter number manually or replace lead.`);
+        toast.info(`Email found — no phone number. Enter manually or swap lead.`);
         setLookupState('not-found');
         const updated = { ...lead, email: data.email, phone_fetched: 1 };
         setLead(updated);
         onUpdate(updated);
         setExpanded(true);
       } else {
-        // Nothing found
-        toast.info('No contact info found — enter manually or replace this lead');
+        toast.info('No contact info found — enter manually or swap this lead');
         setLookupState('not-found');
         const updated = { ...lead, phone_fetched: 1 };
         setLead(updated);
@@ -223,9 +221,10 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
     if (lookupState === 'not-found') {
       return (
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={e => { e.stopPropagation(); setExpanded(true); }}
-            className="h-9 px-2 bg-zinc-700/50 border border-zinc-600/40 text-zinc-400 rounded-l-xl text-[10px] font-semibold transition-colors">
-            No #
+          {/* Retry lookup — tries website scraping now too */}
+          <button onClick={handleLookup}
+            className="flex items-center gap-1 h-9 px-2 bg-zinc-700/50 border border-zinc-600/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 rounded-l-xl text-[10px] font-semibold transition-colors">
+            <Search className="w-3 h-3" /> Retry
           </button>
           <button onClick={handleReplace} disabled={replacing}
             className="flex items-center gap-1 h-9 px-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 rounded-r-xl text-xs font-semibold shrink-0 transition-colors disabled:opacity-50">
