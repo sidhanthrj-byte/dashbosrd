@@ -7,7 +7,7 @@ import { STATUS_DOT } from './StatusBadge';
 import { LeadCard } from './LeadCard';
 import {
   TrendingUp, Clock, CheckCircle2, Users,
-  Zap, AlertCircle, ChevronRight,
+  Zap, AlertCircle, ChevronRight, IndianRupee,
 } from 'lucide-react';
 
 type Stats = {
@@ -15,6 +15,8 @@ type Stats = {
   converted: number;
   inProgress: number;
   todayFollowUps: number;
+  pipelineValue: number;
+  staleLeads: number;
   byStatus: { status: string; count: number }[];
   nextBatchIn: number;
   contactedSinceBatch: number;
@@ -62,6 +64,7 @@ export function Dashboard({ onNavigate, userName = 'there' }: Props) {
   );
 
   const convRate = stats.total > 0 ? Math.round((stats.converted / stats.total) * 100) : 0;
+  const pipelineLakh = stats.pipelineValue > 0 ? (stats.pipelineValue / 100000).toFixed(1) : null;
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -96,6 +99,32 @@ export function Dashboard({ onNavigate, userName = 'there' }: Props) {
         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Converted" value={stats.converted}
           sub={`${convRate}% rate`} accent="text-emerald-400" bg="bg-emerald-500/10 border-emerald-500/20" />
       </div>
+
+      {/* Stale leads alert */}
+      {stats.staleLeads > 0 && (
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-amber-500/10 transition-colors"
+          onClick={() => onNavigate('leads')}>
+          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-400/90">
+            <span className="font-semibold">{stats.staleLeads} lead{stats.staleLeads !== 1 ? 's' : ''}</span> haven&apos;t been contacted in 14+ days
+          </p>
+          <ChevronRight className="w-4 h-4 text-amber-400 ml-auto shrink-0" />
+        </div>
+      )}
+
+      {/* Pipeline value — only show when there's tracked deal value */}
+      {pipelineLakh && (
+        <div className="bg-card border border-emerald-500/20 rounded-xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+            <IndianRupee className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Tracked Pipeline Value</p>
+            <p className="text-xl font-bold text-emerald-400">₹{pipelineLakh}L</p>
+          </div>
+          <p className="text-xs text-muted-foreground ml-auto">from deals with entered value</p>
+        </div>
+      )}
 
       {/* Auto-batch */}
       <div className="bg-card border border-primary/20 rounded-xl p-4 flex items-center gap-4">
