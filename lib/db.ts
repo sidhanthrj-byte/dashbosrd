@@ -69,15 +69,21 @@ export async function initDb(): Promise<void> {
     );
   `);
 
-  // Migrations for existing DBs
+  // Migrations for existing DBs — each is safe to re-run (catches duplicate column error)
   const migrations = [
     'ALTER TABLE leads ADD COLUMN area TEXT',
     'ALTER TABLE leads ADD COLUMN deal_value INTEGER',
     'ALTER TABLE leads ADD COLUMN user_id INTEGER REFERENCES users(id)',
     'ALTER TABLE leads ADD COLUMN archived INTEGER DEFAULT 0',
+    'ALTER TABLE leads ADD COLUMN apollo_id TEXT',
+    'ALTER TABLE leads ADD COLUMN lookup_attempts INTEGER DEFAULT 0',
+    'CREATE INDEX IF NOT EXISTS idx_leads_user_status ON leads(user_id, status)',
+    'CREATE INDEX IF NOT EXISTS idx_leads_user_phone ON leads(user_id, phone_fetched)',
+    'CREATE INDEX IF NOT EXISTS idx_leads_user_date ON leads(user_id, next_action_date)',
+    'CREATE INDEX IF NOT EXISTS idx_leads_archived ON leads(user_id, archived)',
   ];
   for (const m of migrations) {
-    try { await db.execute(m); } catch {}
+    try { await db.execute(m); } catch { /* column/index already exists */ }
   }
 }
 
@@ -223,6 +229,8 @@ export type Lead = {
   project_type: string | null;
   deal_value: number | null;
   archived: number;
+  apollo_id: string | null;
+  lookup_attempts: number;
   user_id: number | null;
   created_at: string;
   updated_at: string;

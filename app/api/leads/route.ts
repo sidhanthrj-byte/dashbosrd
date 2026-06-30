@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
   const priority = searchParams.get('priority');
   const phoneFilter = searchParams.get('phone_filter'); // 'has_phone' | 'no_contact'
   const sort = searchParams.get('sort') || 'priority';
+  const limit = parseInt(searchParams.get('limit') || '50', 10);
+  const offset = parseInt(searchParams.get('offset') || '0', 10);
 
   let sql = 'SELECT * FROM leads WHERE user_id = ? AND (archived = 0 OR archived IS NULL)';
   const params: (string | number)[] = [session.userId];
@@ -42,8 +44,16 @@ export async function GET(req: NextRequest) {
   };
   sql += ` ORDER BY ${ORDER[sort] || ORDER.priority}`;
 
+  // Total count for pagination
+  const countSql = sql.replace(/^SELECT \*/, 'SELECT COUNT(*) as cnt');
+  const countRows = await query<{ cnt: number }>(countSql, params);
+  const total = countRows[0]?.cnt || 0;
+
+  sql += ` LIMIT ? OFFSET ?`;
+  params.push(limit, offset);
+
   const leads = await query(sql, params);
-  return NextResponse.json({ leads });
+  return NextResponse.json({ leads, total, hasMore: offset + leads.length < total });
 }
 
 export async function POST(req: NextRequest) {

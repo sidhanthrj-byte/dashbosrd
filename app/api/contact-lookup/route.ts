@@ -240,10 +240,12 @@ export async function POST(req: NextRequest) {
           phone = COALESCE(?, phone),
           email = COALESCE(?, email),
           linkedin_url = COALESCE(?, linkedin_url),
+          apollo_id = COALESCE(?, apollo_id),
           phone_fetched = 1,
+          lookup_attempts = COALESCE(lookup_attempts, 0) + 1,
           updated_at = datetime('now')
         WHERE id = ? AND user_id = ?
-      `, [phone, email, person?.linkedin_url || null, leadId, session.userId]);
+      `, [phone, email, person?.linkedin_url || null, person?.id || null, leadId, session.userId]);
     }
 
     const apolloPhones: PhoneEntry[] = person?.phone_numbers || [];

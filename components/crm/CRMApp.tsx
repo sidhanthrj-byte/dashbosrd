@@ -49,7 +49,7 @@ export function CRMApp() {
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden flex flex-col pb-16 md:pb-0">
-        {view === 'dashboard' && <Dashboard onNavigate={setView} />}
+        {view === 'dashboard' && <Dashboard onNavigate={setView} userName={user.name} />}
         {view === 'leads'     && <LeadsView onNavigateToday={() => setView('today')} />}
         {view === 'pipeline'  && <PipelineView />}
         {view === 'today'     && <TodayView />}

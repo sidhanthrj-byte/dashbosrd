@@ -42,6 +42,10 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [showGeneratePanel, setShowGeneratePanel] = useState(false);
   const [batchLookupRunning, setBatchLookupRunning] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ done: number; total: number; found: number } | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const PAGE_SIZE = 30;
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -52,16 +56,46 @@ export function LeadsView({ onNavigateToday }: Props) {
       if (search) params.set('search', search);
       params.set('sort', sort);
       if (phoneTab !== 'all') params.set('phone_filter', phoneTab);
+      params.set('limit', String(PAGE_SIZE));
+      params.set('offset', '0');
       const res = await fetch(`/api/leads?${params}`);
       if (!res.ok) return;
       const data = await res.json();
-      if (Array.isArray(data.leads)) setLeads(data.leads);
+      if (Array.isArray(data.leads)) {
+        setLeads(data.leads);
+        setHasMore(data.hasMore || false);
+        setTotal(data.total || data.leads.length);
+      }
     } catch {
       // network error — keep existing leads visible
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, priorityFilter, search, sort, phoneTab]);
+  }, [statusFilter, priorityFilter, search, sort, phoneTab, PAGE_SIZE]);
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (priorityFilter !== 'all') params.set('priority', priorityFilter);
+      if (search) params.set('search', search);
+      params.set('sort', sort);
+      if (phoneTab !== 'all') params.set('phone_filter', phoneTab);
+      params.set('limit', String(PAGE_SIZE));
+      params.set('offset', String(leads.length));
+      const res = await fetch(`/api/leads?${params}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.leads)) {
+        setLeads(prev => [...prev, ...data.leads]);
+        setHasMore(data.hasMore || false);
+      }
+    } catch { /* ignore */ } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(fetchLeads, 250);
@@ -130,31 +164,37 @@ export function LeadsView({ onNavigateToday }: Props) {
       if (unfetched.length === 0) { toast.info('All leads have already been looked up!'); return; }
 
       let found = 0;
+      let done = 0;
       setBatchProgress({ done: 0, total: unfetched.length, found: 0 });
 
-      for (let i = 0; i < unfetched.length; i++) {
-        const lead = unfetched[i];
-        try {
-          const lookupRes = await fetch('/api/contact-lookup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              leadId: lead.id,
-              linkedinUrl: lead.linkedin_url,
-              name: lead.contact_name,
-              company: lead.company_name,
-              email: lead.email,
-            }),
-          });
-          const lookupData = await lookupRes.json();
-          if (lookupRes.ok && (lookupData.phone || lookupData.email)) {
-            found++;
-            handleLeadUpdate({ ...lead, phone: lookupData.phone || lead.phone, email: lookupData.email || lead.email, phone_fetched: 1 });
+      // Process 4 leads concurrently for speed
+      const CONCURRENCY = 4;
+      for (let i = 0; i < unfetched.length; i += CONCURRENCY) {
+        const batch = unfetched.slice(i, i + CONCURRENCY);
+        await Promise.all(batch.map(async (lead) => {
+          try {
+            const lookupRes = await fetch('/api/contact-lookup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                leadId: lead.id,
+                linkedinUrl: lead.linkedin_url,
+                name: lead.contact_name,
+                company: lead.company_name,
+                email: lead.email,
+              }),
+            });
+            const lookupData = await lookupRes.json();
+            if (lookupRes.ok && (lookupData.phone || lookupData.email)) {
+              found++;
+              handleLeadUpdate({ ...lead, phone: lookupData.phone || lead.phone, email: lookupData.email || lead.email, phone_fetched: 1 });
+            }
+          } catch {
+            // continue with next lead
           }
-        } catch {
-          // continue with next lead
-        }
-        setBatchProgress({ done: i + 1, total: unfetched.length, found });
+          done++;
+          setBatchProgress({ done, total: unfetched.length, found });
+        }));
       }
 
       toast.success(`Batch lookup done! Found ${found} phone numbers out of ${unfetched.length} leads.`);
@@ -341,7 +381,7 @@ export function LeadsView({ onNavigateToday }: Props) {
         {/* Count row */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground">
-            {loading ? 'Loading...' : generating ? 'Fetching from Apollo...' : batchLookupRunning && batchProgress ? `Finding phones... ${batchProgress.done}/${batchProgress.total} (${batchProgress.found} found)` : `${leads.length} lead${leads.length !== 1 ? 's' : ''}${phoneTab === 'no_contact' ? ' without phone' : phoneTab === 'has_phone' ? ' with phone' : ''}`}
+            {loading ? 'Loading...' : generating ? 'Fetching from Apollo...' : batchLookupRunning && batchProgress ? `Finding phones... ${batchProgress.done}/${batchProgress.total} (${batchProgress.found} found)` : `${total || leads.length} lead${(total || leads.length) !== 1 ? 's' : ''}${phoneTab === 'no_contact' ? ' without phone' : phoneTab === 'has_phone' ? ' with phone' : ''}${hasMore ? ` (showing ${leads.length})` : ''}`}
           </span>
           {phoneTab === 'no_contact' && leads.length > 0 && !batchLookupRunning && (
             <span className="text-[11px] text-orange-400">Tap &quot;Replace&quot; to swap for a fresh lead</span>
@@ -399,6 +439,13 @@ export function LeadsView({ onNavigateToday }: Props) {
             {leads.map(lead => (
               <LeadCard key={lead.id} lead={lead} onUpdate={handleLeadUpdate} onReplace={handleLeadReplace} />
             ))}
+            {hasMore && (
+              <button onClick={loadMore} disabled={loadingMore}
+                className="w-full py-3 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-secondary text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {loadingMore ? 'Loading...' : `Load more (${total - leads.length} remaining)`}
+              </button>
+            )}
           </div>
         )}
       </div>

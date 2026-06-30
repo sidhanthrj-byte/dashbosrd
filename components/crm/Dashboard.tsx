@@ -26,6 +26,7 @@ import { View } from './Sidebar';
 
 type Props = {
   onNavigate: (view: View) => void;
+  userName?: string;
 };
 
 function timeAgo(date: string) {
@@ -38,7 +39,7 @@ function timeAgo(date: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export function Dashboard({ onNavigate }: Props) {
+export function Dashboard({ onNavigate, userName = 'there' }: Props) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [todayLeads, setTodayLeads] = useState<Lead[]>([]);
 
@@ -67,7 +68,7 @@ export function Dashboard({ onNavigate }: Props) {
       {/* Welcome */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Good {getGreeting()}, Sidhanth 👋</h2>
+          <h2 className="text-xl font-bold text-foreground">Good {getGreeting()}, {userName.split(' ')[0]} 👋</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
