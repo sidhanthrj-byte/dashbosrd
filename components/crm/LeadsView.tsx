@@ -43,6 +43,7 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [showGeneratePanel, setShowGeneratePanel] = useState(false);
   const [batchLookupRunning, setBatchLookupRunning] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ done: number; total: number; found: number } | null>(null);
+  const [notFetchedCount, setNotFetchedCount] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [total, setTotal] = useState(0);
@@ -102,6 +103,12 @@ export function LeadsView({ onNavigateToday }: Props) {
     const t = setTimeout(fetchLeads, 250);
     return () => clearTimeout(t);
   }, [fetchLeads]);
+
+  useEffect(() => {
+    fetch('/api/leads?phone_filter=not_fetched&limit=1').then(r => r.json()).then(d => {
+      if (typeof d.total === 'number') setNotFetchedCount(d.total);
+    }).catch(() => null);
+  }, [batchLookupRunning]);
 
   function handleLeadUpdate(updated: Lead) {
     setLeads(prev => prev.map(l => l.id === updated.id ? updated : l));
@@ -283,9 +290,14 @@ export function LeadsView({ onNavigateToday }: Props) {
           <button
             onClick={batchFindPhones}
             disabled={batchLookupRunning}
-            title="Find all phone numbers"
-            className="w-9 h-9 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white transition-colors flex items-center justify-center shrink-0 disabled:opacity-50">
+            title={notFetchedCount !== null ? `Find phones: ${notFetchedCount} leads not looked up` : 'Find all phone numbers'}
+            className="relative w-9 h-9 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white transition-colors flex items-center justify-center shrink-0 disabled:opacity-50">
             {batchLookupRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4" />}
+            {!batchLookupRunning && notFetchedCount !== null && notFetchedCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 bg-amber-400 text-[9px] font-bold text-black rounded-full flex items-center justify-center">
+                {notFetchedCount > 99 ? '99+' : notFetchedCount}
+              </span>
+            )}
           </button>
           <button onClick={exportCSV} title="Export CSV"
             className="w-9 h-9 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center shrink-0">

@@ -66,20 +66,38 @@ export async function POST(req: NextRequest) {
     await initDb();
     const userId = session.userId;
     const city = session.city;
-    const p = addPerson as ApolloPerson;
+    let p = addPerson as ApolloPerson;
 
-    const companyName = p.organization?.name || p.employment_history?.[0]?.organization_name || 'Unknown';
-    const contactName = p.name || `${p.first_name || ''} ${p.last_name || ''}`.trim();
+    // Enrich via people/match to get real name + org phone (api_search obfuscates last names)
+    if (p.id) {
+      try {
+        const matchRes = await fetch('https://api.apollo.io/api/v1/people/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
+          body: JSON.stringify({ id: p.id, reveal_personal_emails: true }),
+          signal: AbortSignal.timeout(10000),
+        });
+        if (matchRes.ok) {
+          const d = await matchRes.json();
+          if (d?.person) p = d.person;
+        }
+      } catch { /* use original data */ }
+    }
+
+    const formatted = formatPerson(p);
+    const companyName = formatted.organization.name || 'Unknown';
+    const contactName = formatted.name;
     if (!contactName || companyName === 'Unknown') {
       return NextResponse.json({ error: 'Insufficient person data' }, { status: 400 });
     }
 
-    const phone = p.phone || null;
+    const phone = formatted.phone;
     const result = await run(
-      `INSERT INTO leads (company_name, contact_name, contact_title, city, state, linkedin_url, email, phone, phone_fetched, priority, project_type, batch_number, status, user_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'new', ?)`,
-      [companyName, contactName, p.title || 'Architect', city, '', p.linkedin_url || null,
-       p.email || null, phone, phone ? 1 : 0, tierFromTitle(p.title || ''), null, userId]
+      `INSERT INTO leads (company_name, contact_name, contact_title, city, state, linkedin_url, email, phone, phone_fetched, priority, project_type, batch_number, status, user_id, apollo_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'new', ?, ?)`,
+      [companyName, contactName, formatted.title || 'Architect', city, formatted.state || '',
+       formatted.linkedin_url, formatted.email, phone, phone ? 1 : 0,
+       tierFromTitle(formatted.title || ''), null, userId, p.id || null]
     );
     const rows = await query('SELECT * FROM leads WHERE id = ?', [result.lastInsertRowid]);
     return NextResponse.json({ lead: rows[0] }, { status: 201 });
