@@ -11,11 +11,12 @@ import { ApolloSearchModal } from './ApolloSearchModal';
 import { toast } from 'sonner';
 
 const SORT_OPTIONS = [
-  { value: 'priority', label: 'Priority' },
-  { value: 'recent',   label: 'Recent' },
-  { value: 'followup', label: 'Follow-up' },
-  { value: 'name',     label: 'Name A–Z' },
-  { value: 'company',  label: 'Company' },
+  { value: 'attention', label: 'Needs Action' },
+  { value: 'priority',  label: 'Priority' },
+  { value: 'recent',    label: 'Recent' },
+  { value: 'followup',  label: 'Follow-up' },
+  { value: 'name',      label: 'Name A–Z' },
+  { value: 'company',   label: 'Company' },
 ];
 
 type PhoneTab = 'all' | 'has_phone' | 'no_contact';
@@ -31,7 +32,7 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [sort, setSort] = useState('priority');
+  const [sort, setSort] = useState('attention');
   const [phoneTab, setPhoneTab] = useState<PhoneTab>('all');
   const [statsKey, setStatsKey] = useState(0);
   const [showFilters, setShowFilters] = useState(false);

@@ -11,7 +11,7 @@ import { getWhatsAppUrl } from '@/lib/whatsapp';
 import {
   MapPin, Phone, Mail, Link2, Calendar, ChevronDown,
   Edit3, ExternalLink, MessageCircle, Bell, IndianRupee,
-  Search, Loader2, UserX, RefreshCw, Star, Check,
+  Search, Loader2, UserX, RefreshCw, Star, Check, StickyNote,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -52,6 +52,12 @@ function isOverdue(d: string) {
   return new Date(d) < new Date(new Date().toDateString());
 }
 
+function daysSince(d: string | null) {
+  if (!d) return null;
+  const diff = Date.now() - new Date(d).getTime();
+  return Math.floor(diff / 86400000);
+}
+
 function tomorrowStr() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -71,6 +77,9 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
   const [manualPhone, setManualPhone] = useState('');
   const [savingPhone, setSavingPhone] = useState(false);
   const [replacing, setReplacing] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteText, setNoteText] = useState(lead.notes || '');
+  const [savingNote, setSavingNote] = useState(false);
   const [nextSteps, setNextSteps] = useState<NextStep[]>(() => {
     try { return lead.ai_next_steps ? JSON.parse(lead.ai_next_steps) : []; }
     catch { return []; }
@@ -92,6 +101,7 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           leadId: lead.id,
+          apolloId: lead.apollo_id,
           linkedinUrl: lead.linkedin_url,
           name: lead.contact_name,
           company: lead.company_name,
@@ -154,6 +164,28 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
     }
   }
 
+  async function saveNote(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (noteText.trim() === (lead.notes || '').trim()) { setEditingNote(false); return; }
+    setSavingNote(true);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: noteText.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setLead(data.lead);
+      setEditingNote(false);
+      onUpdate(data.lead);
+    } catch (err) {
+      toast.error('Failed to save note: ' + String(err));
+    } finally {
+      setSavingNote(false);
+    }
+  }
+
   async function handleReplace(e: React.MouseEvent) {
     e.stopPropagation();
     if (replacing) return;
@@ -186,6 +218,8 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
   const overdue = lead.next_action_date && isOverdue(lead.next_action_date)
     && !['converted', 'not_interested'].includes(lead.status);
   const tier = TIER[lead.priority] || TIER.medium;
+  const daysSinceContact = daysSince(lead.last_contact_date);
+  const staleDays = daysSinceContact !== null && daysSinceContact > 14 && !['converted', 'not_interested', 'on_hold'].includes(lead.status) ? daysSinceContact : null;
 
   // Suppress unused var warning
   void tomorrowStr;
@@ -285,6 +319,12 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
                     <span className="text-xs text-sky-400 flex items-center gap-0.5"><Mail className="w-2.5 h-2.5" />email only</span>
                   </>
                 )}
+                {staleDays && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="text-xs text-amber-500/80 flex items-center gap-0.5">{staleDays}d silent</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -374,13 +414,40 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
               </div>
             )}
 
-            {/* Notes */}
-            {lead.notes && (
-              <div className="text-xs text-muted-foreground bg-secondary/50 rounded-lg p-2.5 border border-border leading-relaxed">
-                <span className="text-foreground font-medium block mb-0.5">Notes</span>
-                {lead.notes}
-              </div>
-            )}
+            {/* Notes — inline editable */}
+            <div className="bg-secondary/40 rounded-xl border border-border overflow-hidden">
+              {editingNote ? (
+                <div className="p-2.5 space-y-1.5">
+                  <textarea
+                    value={noteText}
+                    onChange={e => setNoteText(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    onKeyDown={e => { if (e.key === 'Escape') { setEditingNote(false); setNoteText(lead.notes || ''); } }}
+                    rows={3}
+                    placeholder="Add a note..."
+                    className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none resize-none leading-relaxed"
+                    autoFocus
+                  />
+                  <div className="flex gap-1.5">
+                    <button onClick={saveNote} disabled={savingNote}
+                      className="flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2 py-1 disabled:opacity-40">
+                      {savingNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Save
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); setEditingNote(false); setNoteText(lead.notes || ''); }}
+                      className="text-xs text-muted-foreground hover:text-foreground px-2 py-1">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={e => { e.stopPropagation(); setEditingNote(true); }}
+                  className="w-full text-left p-2.5 flex items-start gap-2 hover:bg-secondary/60 transition-colors group">
+                  <StickyNote className="w-3 h-3 text-muted-foreground/60 shrink-0 mt-0.5 group-hover:text-primary/60" />
+                  {lead.notes
+                    ? <span className="text-xs text-muted-foreground leading-relaxed">{lead.notes}</span>
+                    : <span className="text-xs text-muted-foreground/40">Add a note...</span>
+                  }
+                </button>
+              )}
+            </div>
 
             {/* Next steps */}
             {nextSteps.length > 0

@@ -130,15 +130,20 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { leadId, linkedinUrl, name, company, email: knownEmail } = await req.json();
+  const { leadId, linkedinUrl, name, company, email: knownEmail, apolloId: knownApolloId } = await req.json();
   const apolloKey = process.env.APOLLO_API_KEY;
   if (!apolloKey) return NextResponse.json({ error: 'Apollo API key not configured' }, { status: 500 });
 
   try {
     let person: ApolloPerson | null = null;
 
+    // ── Step 0: Direct ID lookup (fastest — uses cached Apollo ID from generate) ──
+    if (knownApolloId) {
+      person = await apolloMatchById(knownApolloId, apolloKey);
+    }
+
     // ── Step 1: LinkedIn URL match (most accurate) ─────────────────────────────
-    if (linkedinUrl) {
+    if (!person && linkedinUrl) {
       person = await apolloMatchByLinkedin(linkedinUrl, apolloKey);
     }
 

@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
 
   const ORDER: Record<string, string> = {
     priority: "CASE WHEN phone IS NOT NULL THEN 0 ELSE 1 END ASC, CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC, CASE WHEN next_action_date <= date('now') THEN 0 ELSE 1 END ASC, updated_at DESC",
+    attention: "CASE WHEN next_action_date <= date('now') AND status NOT IN ('converted','not_interested','on_hold') THEN 0 ELSE 1 END ASC, CASE WHEN last_contact_date IS NULL OR julianday('now') - julianday(last_contact_date) > 14 THEN 0 ELSE 1 END ASC, CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END ASC, updated_at DESC",
     recent:   'updated_at DESC',
     followup: 'next_action_date ASC',
     name:     'contact_name ASC',
