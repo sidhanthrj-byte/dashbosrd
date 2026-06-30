@@ -165,17 +165,13 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
         body: JSON.stringify({ count: 1, replace_lead_id: lead.id, page: Math.floor(Math.random() * 5) + 1 }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Failed'); setReplacing(false); return; }
-      if (data.added > 0 && data.leads[0]) {
+      if (!res.ok) { toast.error(data.error || 'Failed to swap lead'); setReplacing(false); return; }
+      if (data.added > 0 && data.leads?.[0]) {
         toast.success('Swapped for a fresh lead!');
         onReplace?.(lead.id, data.leads[0]);
       } else {
-        await fetch(`/api/leads/${lead.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ archived: 1 }),
-        });
-        toast.info('Lead archived. No replacements available right now.');
+        // Generate already archived the lead server-side; just remove from UI
+        toast.info('Lead removed. Apollo had no new leads right now.');
         onReplace?.(lead.id, null);
       }
     } catch {

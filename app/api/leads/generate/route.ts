@@ -164,18 +164,20 @@ export async function POST(req: NextRequest) {
   const userId = session.userId;
   const location = CITY_LOCATIONS[city] || city;
 
+  // Archive FIRST, then build dedup sets excluding archived leads
+  // (so the archived lead doesn't block its own replacement)
   if (replace_lead_id) {
     await run("UPDATE leads SET archived = 1, updated_at = datetime('now') WHERE id = ? AND user_id = ?",
       [replace_lead_id, userId]);
   }
 
   const existing = await query<{ linkedin_url: string }>(
-    'SELECT linkedin_url FROM leads WHERE user_id = ? AND linkedin_url IS NOT NULL', [userId]
+    'SELECT linkedin_url FROM leads WHERE user_id = ? AND linkedin_url IS NOT NULL AND (archived = 0 OR archived IS NULL)', [userId]
   );
   const existingUrls = new Set(existing.map(r => r.linkedin_url));
 
   const existingNames = await query<{ contact_name: string; company_name: string }>(
-    'SELECT contact_name, company_name FROM leads WHERE user_id = ?', [userId]
+    'SELECT contact_name, company_name FROM leads WHERE user_id = ? AND (archived = 0 OR archived IS NULL)', [userId]
   );
   const existingCombos = new Set(existingNames.map(r => `${r.contact_name}|${r.company_name}`));
 
@@ -358,7 +360,8 @@ export async function POST(req: NextRequest) {
         person_titles: TITLES,
         person_locations: [location],
         q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
-        per_page: Math.min(count, 25),
+        // When replacing (count=1), fetch 15 candidates so we have room to skip dupes
+        per_page: replace_lead_id ? 15 : Math.min(count, 25),
         page,
       }),
     });
@@ -378,6 +381,9 @@ export async function POST(req: NextRequest) {
 
     const addedLeads = [];
     for (const person of people) {
+      if (replace_lead_id && addedLeads.length >= 1) break; // only need 1 replacement
+      if (!replace_lead_id && addedLeads.length >= count) break;
+
       const companyName = person.organization?.name || person.employment_history?.[0]?.organization_name || 'Unknown';
       const contactName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim();
       if (!contactName || contactName === 'Unknown' || companyName === 'Unknown') continue;
