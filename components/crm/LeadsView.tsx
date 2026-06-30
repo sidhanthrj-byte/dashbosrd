@@ -7,6 +7,7 @@ import { StatsBar } from './StatsBar';
 import { STATUS_CONFIG } from '@/lib/next-steps';
 import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2, Phone, PhoneOff, PhoneCall } from 'lucide-react';
 import { AddLeadModal } from './AddLeadModal';
+import { ApolloSearchModal } from './ApolloSearchModal';
 import { toast } from 'sonner';
 
 const SORT_OPTIONS = [
@@ -35,6 +36,7 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [statsKey, setStatsKey] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
+  const [showApolloSearch, setShowApolloSearch] = useState(false);
   const [generateCount, setGenerateCount] = useState(10);
   const [generateArea, setGenerateArea] = useState('');
   const [showGeneratePanel, setShowGeneratePanel] = useState(false);
@@ -75,6 +77,11 @@ export function LeadsView({ onNavigateToday }: Props) {
     setLeads(prev => [lead, ...prev]);
     setStatsKey(k => k + 1);
     setShowAddLead(false);
+  }
+
+  function handleApolloLeadAdded(lead: Lead) {
+    setLeads(prev => [lead, ...prev]);
+    setStatsKey(k => k + 1);
   }
 
   function handleLeadReplace(archivedId: number, newLead: Lead | null) {
@@ -218,6 +225,12 @@ export function LeadsView({ onNavigateToday }: Props) {
           <button onClick={() => setShowAddLead(true)}
             className="w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center shrink-0">
             <Plus className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowApolloSearch(true)}
+            title="Search Apollo by name / company"
+            className="w-9 h-9 rounded-xl bg-amber-600 hover:bg-amber-500 text-white transition-colors flex items-center justify-center shrink-0">
+            <Search className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowGeneratePanel(!showGeneratePanel)}
@@ -391,6 +404,7 @@ export function LeadsView({ onNavigateToday }: Props) {
       </div>
 
       <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onAdded={handleLeadAdded} />
+      <ApolloSearchModal open={showApolloSearch} onClose={() => setShowApolloSearch(false)} onLeadAdded={handleApolloLeadAdded} />
     </div>
   );
 }

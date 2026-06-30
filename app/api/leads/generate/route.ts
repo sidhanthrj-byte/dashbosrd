@@ -125,7 +125,6 @@ async function matchApolloContact(companyName: string, apolloKey: string): Promi
         organization_name: companyName,
         person_titles: TITLES,
         reveal_personal_emails: true,
-        reveal_phone_number: true,
       }),
       signal: AbortSignal.timeout(10000),
     });
@@ -254,11 +253,10 @@ export async function POST(req: NextRequest) {
     if (addedLeads.length < count) {
       const needed = count - addedLeads.length;
       try {
-        const apolloRes = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+        const apolloRes = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
           body: JSON.stringify({
-            q_person_title_fuzzy_match: true,
             person_titles: TITLES,
             person_locations: [location],
             q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
@@ -304,11 +302,10 @@ export async function POST(req: NextRequest) {
 
           // If still short, try next page automatically
           if (addedLeads.length < needed && people.length === 25) {
-            const nextRes = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+            const nextRes = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
               body: JSON.stringify({
-                q_person_title_fuzzy_match: true,
                 person_titles: TITLES,
                 person_locations: [location],
                 q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],
@@ -352,11 +349,10 @@ export async function POST(req: NextRequest) {
 
   // ── CITY-LEVEL APOLLO SEARCH (no area) ───────────────────────────────────────
   try {
-    const res = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+    const res = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
       body: JSON.stringify({
-        q_person_title_fuzzy_match: true,
         person_titles: TITLES,
         person_locations: [location],
         q_organization_keyword_tags: ['architecture', 'interior design', 'design studio'],

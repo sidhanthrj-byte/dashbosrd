@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth';
 
 function cleanIndianPhone(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
-  // Strip leading 91 or 0
   const num = digits.startsWith('91') && digits.length >= 12
     ? digits.slice(2)
     : digits.startsWith('0') && digits.length === 11
@@ -23,15 +22,12 @@ function extractPhonesFromHtml(html: string): string[] {
     if (p && !seen.has(p)) { seen.add(p); results.push(p); }
   }
 
-  // Priority 1: <a href="tel:..."> — most reliable
   const telLinks = html.matchAll(/href=["']tel:\+?(\d[\d\s\-().]{7,14}\d)["']/gi);
   for (const m of telLinks) add(m[1]);
 
-  // Priority 2: +91 followed by 10 digits (international format)
   const intl = html.matchAll(/\+91[-.\s]?([6789]\d{2}[-.\s]?\d{3}[-.\s]?\d{4})/g);
   for (const m of intl) add(`91${m[1].replace(/\D/g, '')}`);
 
-  // Priority 3: Numbers in phone-context keywords
   const ctx = html.matchAll(/(?:phone|mobile|mob|call us|contact|whatsapp|tel)[\s:.-]{0,5}(\+?91[-.\s]?)?([6789]\d{2}[-.\s]?\d{3}[-.\s]?\d{4})/gi);
   for (const m of ctx) add(`${m[1] || ''}${m[2]}`);
 
@@ -68,6 +64,68 @@ async function scrapePhoneFromWebsite(baseUrl: string): Promise<string | null> {
   return null;
 }
 
+type PhoneEntry = { raw_number: string; sanitized_number?: string; type: string };
+type ApolloOrg = { name?: string; website_url?: string; primary_phone?: { number: string; sanitized_number?: string }; phone?: string };
+type ApolloPerson = {
+  id?: string; name?: string; title?: string; email?: string; linkedin_url?: string;
+  phone_numbers?: PhoneEntry[]; sanitized_phone?: string;
+  organization?: ApolloOrg;
+  contact_emails?: Array<{ email: string }>;
+};
+
+async function apolloSearch(params: Record<string, unknown>, apolloKey: string): Promise<ApolloPerson[]> {
+  const res = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
+    body: JSON.stringify({ per_page: 5, ...params }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) return [];
+  const d = await res.json();
+  return d?.people || [];
+}
+
+async function apolloMatchById(id: string, apolloKey: string): Promise<ApolloPerson | null> {
+  const res = await fetch('https://api.apollo.io/api/v1/people/match', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
+    body: JSON.stringify({ id, reveal_personal_emails: true }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) return null;
+  const d = await res.json();
+  return d?.person || null;
+}
+
+async function apolloMatchByLinkedin(linkedinUrl: string, apolloKey: string): Promise<ApolloPerson | null> {
+  const res = await fetch('https://api.apollo.io/api/v1/people/match', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
+    body: JSON.stringify({ linkedin_url: linkedinUrl, reveal_personal_emails: true }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) return null;
+  const d = await res.json();
+  return d?.person || null;
+}
+
+function extractPhoneFromPerson(person: ApolloPerson): string | null {
+  // Direct phone numbers returned (e.g. from direct search results)
+  const phones = person.phone_numbers || [];
+  const mobile = phones.find(p => p.type === 'mobile');
+  const work = phones.find(p => p.type === 'work');
+  const best = mobile || work || phones[0];
+  if (best?.sanitized_number || best?.raw_number) {
+    return best.sanitized_number || best.raw_number;
+  }
+  // Org primary phone (usually the main contact number — often a mobile for Indian firms)
+  const orgPhone = person.organization?.primary_phone;
+  if (orgPhone) {
+    return orgPhone.sanitized_number || orgPhone.number || null;
+  }
+  return person.organization?.phone || person.sanitized_phone || null;
+}
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -77,75 +135,89 @@ export async function POST(req: NextRequest) {
   if (!apolloKey) return NextResponse.json({ error: 'Apollo API key not configured' }, { status: 500 });
 
   try {
-    // ── Step 1: Apollo people/match ────────────────────────────────────────────
-    const nameParts = (name || '').trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-
-    const apolloBody: Record<string, unknown> = {
-      reveal_personal_emails: true,
-      reveal_phone_number: true,
-    };
-    if (firstName) apolloBody.first_name = firstName;
-    if (lastName) apolloBody.last_name = lastName;
-    if (company) apolloBody.organization_name = company;
-    if (linkedinUrl) apolloBody.linkedin_url = linkedinUrl;
-    if (knownEmail) apolloBody.email = knownEmail;
-
-    const apolloRes = await fetch('https://api.apollo.io/api/v1/people/match', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
-      body: JSON.stringify(apolloBody),
-    });
-
-    type PhoneEntry = { raw_number: string; sanitized_number?: string; type: string };
-    type ApolloOrg = { website_url?: string; primary_phone?: { number: string }; phone?: string };
-    type ApolloPerson = {
-      name?: string; title?: string; email?: string; linkedin_url?: string;
-      phone_numbers?: PhoneEntry[]; sanitized_phone?: string;
-      organization?: ApolloOrg;
-      contact_emails?: Array<{ email: string }>;
-    };
-
     let person: ApolloPerson | null = null;
-    if (apolloRes.ok) {
-      const d = await apolloRes.json();
-      person = d?.person || null;
+
+    // ── Step 1: LinkedIn URL match (most accurate) ─────────────────────────────
+    if (linkedinUrl) {
+      person = await apolloMatchByLinkedin(linkedinUrl, apolloKey);
     }
 
-    // Extract phone from Apollo
-    const apolloPhones: PhoneEntry[] = person?.phone_numbers || [];
-    const mobile = apolloPhones.find(p => p.type === 'mobile');
-    const work = apolloPhones.find(p => p.type === 'work');
-    const bestApollo = mobile || work || apolloPhones[0];
-    let phone: string | null = bestApollo?.raw_number || bestApollo?.sanitized_number || null;
+    // ── Step 2: api_search to get Apollo ID, then people/match with ID ─────────
+    if (!person) {
+      const nameParts = (name || '').trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Check org phone from Apollo
-    if (!phone && person?.organization) {
-      phone = person.organization.primary_phone?.number
-        || person.organization.phone
-        || person?.sanitized_phone
-        || null;
+      // Try name + company search
+      const searchParams: Record<string, unknown> = {};
+      if (firstName) searchParams.first_name = firstName;
+      if (lastName) searchParams.last_name = lastName;
+      if (company) searchParams.q_organization_name = company;
+      if (knownEmail) searchParams.email = knownEmail;
+
+      if (Object.keys(searchParams).length > 0) {
+        const searchResults = await apolloSearch(searchParams, apolloKey);
+
+        // Find the best match
+        const nameLower = (name || '').toLowerCase();
+        const companyLower = (company || '').toLowerCase();
+        const best = searchResults.find(p => {
+          const pName = (p.name || '').toLowerCase();
+          const pOrg = (p.organization?.name || '').toLowerCase();
+          const nameMatch = nameLower && (pName.includes(nameLower.split(' ')[0]) || nameLower.split(' ')[0].includes(pName.split(' ')[0]));
+          const orgMatch = companyLower && (pOrg.includes(companyLower.slice(0, 8)) || companyLower.includes(pOrg.slice(0, 8)));
+          return nameMatch || orgMatch;
+        }) || searchResults[0];
+
+        // If we got an Apollo ID from search, do people/match with that ID for full data
+        if (best?.id) {
+          person = await apolloMatchById(best.id, apolloKey);
+          // Fall back to search result if match failed
+          if (!person) person = best;
+        } else if (best) {
+          person = best;
+        }
+      }
     }
 
+    // ── Step 3: fallback — people/match by name+company (no ID) ───────────────
+    if (!person && (name || company)) {
+      const nameParts = (name || '').trim().split(' ');
+      const matchBody: Record<string, unknown> = { reveal_personal_emails: true };
+      if (nameParts[0]) matchBody.first_name = nameParts[0];
+      if (nameParts.slice(1).join(' ')) matchBody.last_name = nameParts.slice(1).join(' ');
+      if (company) matchBody.organization_name = company;
+      if (knownEmail) matchBody.email = knownEmail;
+
+      const matchRes = await fetch('https://api.apollo.io/api/v1/people/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
+        body: JSON.stringify(matchBody),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (matchRes.ok) {
+        const d = await matchRes.json();
+        person = d?.person || null;
+      }
+    }
+
+    let phone = extractPhoneFromPerson(person || {});
     let phoneSource = phone ? 'apollo' : null;
 
-    // Extract email from Apollo
+    // Extract emails
     const emailSet = new Set<string>();
     if (person?.email) emailSet.add(person.email);
     (person?.contact_emails || []).forEach(e => { if (e.email) emailSet.add(e.email); });
     const email = [...emailSet][0] || null;
 
-    // ── Step 2: Website scraping if Apollo has no phone ────────────────────────
+    // ── Step 4: Website scraping fallback ─────────────────────────────────────
     if (!phone) {
-      // Try the website from Apollo's org data first
       const websiteUrl = person?.organization?.website_url || null;
       if (websiteUrl) {
         const scraped = await scrapePhoneFromWebsite(websiteUrl);
         if (scraped) { phone = scraped; phoneSource = 'website'; }
       }
 
-      // If still nothing, try guessing a website from the company name
       if (!phone && company) {
         const slug = company
           .toLowerCase()
@@ -174,12 +246,13 @@ export async function POST(req: NextRequest) {
       `, [phone, email, person?.linkedin_url || null, leadId, session.userId]);
     }
 
+    const apolloPhones: PhoneEntry[] = person?.phone_numbers || [];
     return NextResponse.json({
       found: !!(phone || email),
       phone,
       email,
       source: phoneSource,
-      allPhones: apolloPhones.map(p => ({ number: p.raw_number || p.sanitized_number, type: p.type })),
+      allPhones: apolloPhones.map(p => ({ number: p.sanitized_number || p.raw_number, type: p.type })),
       allEmails: [...emailSet],
       name: person?.name,
       title: person?.title,
