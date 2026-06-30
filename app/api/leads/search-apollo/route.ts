@@ -127,21 +127,24 @@ export async function POST(req: NextRequest) {
 
   const searchBody: Record<string, unknown> = { per_page: 10, page };
 
-  // Always search within the user's city, optionally narrowed by area
-  const baseLocation = CITY_LOCATIONS[session.city] || session.city;
-  const location = area ? `${area}, ${baseLocation}` : baseLocation;
-  searchBody.person_locations = [location];
+  // Always lock to user's city
+  const cityLocation = CITY_LOCATIONS[session.city] || session.city;
+  searchBody.person_locations = [cityLocation];
 
-  // Always enforce profession filter — this CRM is for architects & interior designers
+  // Always enforce profession — this CRM is for architects & interior designers
   searchBody.person_titles = title ? [title] : [
     'Architect', 'Principal Architect', 'Senior Architect', 'Associate Architect',
-    'Interior Designer', 'Interior Design', 'Design Director', 'Design Manager',
+    'Interior Designer', 'Interior Architect', 'Design Director', 'Design Manager',
     'Studio Manager', 'Head of Design', 'Head of Projects',
     'Founder', 'Partner', 'Principal',
   ];
   searchBody.q_organization_keyword_tags = ['architecture', 'interior design', 'design studio', 'construction'];
 
+  // Area narrows via keyword (sub-area name appears in org address/bio)
+  // Person name / custom keywords override area
   if (keywords) searchBody.q_keywords = keywords;
+  else if (area) searchBody.q_keywords = area;
+
   if (company) searchBody.q_organization_name = company;
 
   const apolloRes = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
