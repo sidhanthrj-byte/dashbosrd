@@ -76,7 +76,7 @@ export function FindLeadsModal({ open, onClose, onLeadsAdded }: Props) {
       const res = await fetch('/api/leads/search-apollo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ page: p, ...(areaFilter ? { keywords: areaFilter } : {}) }),
+        body: JSON.stringify({ page: p, ...(areaFilter ? { area: areaFilter } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Failed to load'); return; }

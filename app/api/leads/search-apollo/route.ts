@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   // Read body once
   const body = await req.json().catch(() => ({}));
-  const { keywords, company, title, linkedinUrl, page = 1, addPerson } = body;
+  const { keywords, company, title, linkedinUrl, area, page = 1, addPerson } = body;
 
   // ── Add a specific Apollo person as a lead ─────────────────────────────────
   if (addPerson) {
@@ -127,23 +127,22 @@ export async function POST(req: NextRequest) {
 
   const searchBody: Record<string, unknown> = { per_page: 10, page };
 
+  // Always search within the user's city, optionally narrowed by area
+  const baseLocation = CITY_LOCATIONS[session.city] || session.city;
+  const location = area ? `${area}, ${baseLocation}` : baseLocation;
+  searchBody.person_locations = [location];
+
+  // Always enforce profession filter — this CRM is for architects & interior designers
+  searchBody.person_titles = title ? [title] : [
+    'Architect', 'Principal Architect', 'Senior Architect', 'Associate Architect',
+    'Interior Designer', 'Interior Design', 'Design Director', 'Design Manager',
+    'Studio Manager', 'Head of Design', 'Head of Projects',
+    'Founder', 'Partner', 'Principal',
+  ];
+  searchBody.q_organization_keyword_tags = ['architecture', 'interior design', 'design studio', 'construction'];
+
   if (keywords) searchBody.q_keywords = keywords;
   if (company) searchBody.q_organization_name = company;
-  if (title) searchBody.person_titles = [title];
-
-  // Add location + industry filter when no specific person is being searched
-  if (!keywords && !company) {
-    const location = CITY_LOCATIONS[session.city] || session.city;
-    searchBody.person_locations = [location];
-    if (!title) {
-      searchBody.person_titles = [
-        'Architect', 'Principal Architect', 'Interior Designer', 'Design Director',
-        'Senior Architect', 'Associate Architect', 'Founder', 'Director',
-        'Head of Projects', 'Design Manager', 'Studio Manager',
-      ];
-      searchBody.q_organization_keyword_tags = ['architecture', 'interior design', 'design studio'];
-    }
-  }
 
   const apolloRes = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
     method: 'POST',
