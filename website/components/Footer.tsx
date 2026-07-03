@@ -3,12 +3,12 @@ import { site, centers } from "@/lib/data";
 
 export function Footer() {
   return (
-    <footer className="bg-ink text-paper">
+    <footer className="on-dark overflow-hidden bg-ink text-paper">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 md:grid-cols-4">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold tracking-[0.18em]">PONGS</span>
-            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-mist">India</span>
+            <span className="display text-xl font-bold tracking-[0.16em]">PONGS</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.34em] text-paper/60">India</span>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-paper/60">
             Official channel partner of PONGS® Germany for architectural
@@ -49,8 +49,16 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-white/10 py-6 text-center text-xs text-paper/40">
-        © {new Date().getFullYear()} PONGS India · DESCOR®, PONGS® and PRINTERIEUR® are registered trademarks of PONGS® Group, Germany.
+      <div className="mx-auto max-w-7xl px-5">
+        <div
+          aria-hidden
+          className="display -mb-[2vw] select-none whitespace-nowrap text-center text-[13.5vw] font-bold leading-none tracking-[-0.04em] text-paper/10"
+        >
+          PONGS INDIA
+        </div>
+      </div>
+      <div className="relative border-t border-white/10 py-6 text-center text-xs text-paper/40">
+        © {new Date().getFullYear()} PONGS INDIA · DESCOR®, PONGS® and PRINTERIEUR® are registered trademarks of PONGS® Group, Germany.
       </div>
     </footer>
   );

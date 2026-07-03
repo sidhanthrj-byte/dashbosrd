@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Clock3, Sparkles, HeartPulse, Droplets, Paintbrush, BadgeCheck } from "lucide-react";
 import { Section, SectionHead, CTA, Faq } from "@/components/ui";
+import { BacklitDemo } from "@/components/BacklitDemo";
+import { EstimateWizard } from "@/components/EstimateWizard";
+import { Reveal } from "@/components/Reveal";
 import { img, homeownerFaqs, testimonials, centers } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -56,13 +59,22 @@ export default function HomeownersPage() {
             { icon: Droplets, t: "Monsoon-proof", d: "Fabric doesn't absorb moisture. No fungus patches, no flaking, no swelling — even in Mumbai and Chennai humidity." },
             { icon: BadgeCheck, t: "German quality, local team", d: "Fabric woven in Germany for 110+ years; installed by our own trained PONGS India crews — 1,000+ projects done." },
           ].map(({ icon: Icon, t, d }) => (
-            <div key={t} className="rounded-2xl border border-ink/10 p-7">
-              <Icon className="text-mist" size={26} />
-              <h3 className="mt-4 text-lg font-bold">{t}</h3>
-              <p className="mt-2 text-sm leading-relaxed opacity-65">{d}</p>
-            </div>
+            <Reveal key={t}>
+              <div className="group h-full rounded-3xl border border-ink/10 p-7 transition-all hover:-translate-y-1 hover:border-ink/30 hover:shadow-xl hover:shadow-ink/5">
+                <Icon className="text-mist transition-colors group-hover:text-ink" size={26} />
+                <h3 className="display mt-4 text-lg">{t}</h3>
+                <p className="mt-2 text-sm leading-relaxed opacity-65">{d}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
+      </Section>
+
+      {/* Interactive backlit demo */}
+      <Section tight>
+        <Reveal>
+          <BacklitDemo />
+        </Reveal>
       </Section>
 
       {/* Visual inspiration */}
@@ -128,6 +140,18 @@ export default function HomeownersPage() {
             </figure>
           ))}
         </div>
+      </Section>
+
+      {/* Instant estimate */}
+      <Section muted>
+        <Reveal>
+          <SectionHead
+            eyebrow="Curious about cost?"
+            title="Price your room in sixty seconds."
+            lead="No phone number needed, no waiting — pick your room, slide the size, choose a look."
+          />
+          <EstimateWizard />
+        </Reveal>
       </Section>
 
       {/* FAQ + CTA */}

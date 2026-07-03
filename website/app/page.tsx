@@ -1,20 +1,41 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Ruler,
-  Home,
-  Clock3,
-  ShieldCheck,
-  Sparkles,
-  Volume2,
-} from "lucide-react";
+import { ArrowRight, Ruler, Home } from "lucide-react";
 import { Section, SectionHead, CTA } from "@/components/ui";
-import { stats, img, centers, variants, testimonials } from "@/lib/data";
+import { AudienceGate } from "@/components/AudienceGate";
+import { StatBar } from "@/components/StatBar";
+import { EstimateWizard } from "@/components/EstimateWizard";
+import { Reveal } from "@/components/Reveal";
+import { img, centers, variants, testimonials } from "@/lib/data";
+
+const whyPoints = [
+  {
+    n: "01",
+    t: "Seamless up to 5.05 m",
+    d: "Woven wide in Germany, so most Indian rooms are covered in a single joint-free piece. No joints means no cracks — ever.",
+  },
+  {
+    n: "02",
+    t: "Installed in a day",
+    d: "Dry, dust-free tensioning into a slim aluminium track. Furniture stays in the room; a living room is done between breakfast and dinner.",
+  },
+  {
+    n: "03",
+    t: "Acoustics built in",
+    d: "DESCOR® PREMIUM Acoustic absorbs up to αw 0.90 (Class A) while looking like a plain, elegant ceiling — no foam panels in sight.",
+  },
+  {
+    n: "04",
+    t: "Healthy & fire-safe",
+    d: "PVC-free, VOC-free, OEKO-TEX® certified, B-s1,d0 fire class. And polyester shrugs off monsoon humidity that ruins POP and gypsum.",
+  },
+];
 
 export default function HomePage() {
   return (
     <>
+      <AudienceGate />
+
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="on-dark relative flex min-h-[92vh] items-end bg-ink text-paper">
         <Image
@@ -26,247 +47,268 @@ export default function HomePage() {
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
-        <div className="relative mx-auto w-full max-w-7xl px-5 pb-20 pt-40">
+        <div className="relative mx-auto w-full max-w-7xl px-5 pb-24 pt-40">
           <p className="eyebrow text-paper/60">PONGS INDIA · Official Channel Partner of PONGS® Germany</p>
-          <h1 className="display mt-5 max-w-5xl text-5xl md:text-8xl">
+          <h1 className="display mt-6 max-w-5xl text-5xl md:text-8xl">
             The ceiling, reinvented.
             <span className="block text-paper/50">In fabric. In a day.</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-paper/80 md:text-lg">
+          <p className="mt-7 max-w-2xl text-base leading-relaxed text-paper/80 md:text-lg">
             DESCOR® textile stretch ceilings & walls — seamless up to 5 metres,
             acoustically engineered, PVC-free and fire-certified. Made in
-            Germany for 110+ years. Installed across India by PONGS India,
-            1,000+ projects and counting.
+            Germany for 110+ years. 1,000+ projects across India.
           </p>
-          <div className="mt-9 flex flex-wrap gap-4">
+          <div className="mt-10 flex flex-wrap gap-4">
             <CTA href="/contact#quote">Get a Quick Quote</CTA>
             <CTA href="/projects" ghost>See Our Projects</CTA>
           </div>
         </div>
       </section>
 
-      {/* ── Dual path: the core of the site ─────────────────── */}
-      <Section tight>
-        <div className="grid gap-5 md:grid-cols-2">
-          <Link
-            href="/for-architects"
-            className="group relative overflow-hidden rounded-2xl bg-ink p-9 text-paper transition-transform hover:-translate-y-1 md:p-12"
-          >
-            <Ruler className="text-mist" size={30} />
-            <p className="eyebrow mt-6">I am an Architect / Interior Designer</p>
-            <h2 className="display mt-2 text-2xl md:text-4xl">
-              Specifications, certifications, installation details.
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-paper/60 md:text-base">
-              Full technical data for every DESCOR® variant, fire & acoustic
-              certificates, detailing for services integration, timelines and
-              commercial terms — everything you need to specify with confidence.
-            </p>
-            <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-paper">
-              Enter the technical hub <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-            </span>
-          </Link>
-
-          <Link
-            href="/for-homeowners"
-            className="group relative overflow-hidden rounded-2xl bg-paper-2 p-9 transition-transform hover:-translate-y-1 md:p-12"
-          >
-            <Home className="text-mist" size={30} />
-            <p className="eyebrow mt-6">I am a Homeowner</p>
-            <h2 className="display mt-2 text-2xl md:text-4xl">
-              A beautiful, healthy home — without the renovation chaos.
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed opacity-60 md:text-base">
-              See what living under a PONGS ceiling feels like: no dust, no
-              cracks, no repainting — ever. Real homes, real reviews, and a
-              ceiling that goes up in a single day.
-            </p>
-            <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-mist">
-              Explore for your home <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-            </span>
-          </Link>
-        </div>
-      </Section>
-
-      {/* ── Stats / social proof ─────────────────────────────── */}
+      {/* ── Stats ────────────────────────────────────────────── */}
       <Section dark tight>
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <div className="display text-4xl text-paper md:text-5xl">{s.value}</div>
-              <div className="mt-2 text-xs uppercase tracking-widest text-paper/50">{s.label}</div>
-            </div>
-          ))}
-        </div>
+        <StatBar />
       </Section>
 
-      {/* ── Why textile ──────────────────────────────────────── */}
+      {/* ── Dual path (persistent, compact) ──────────────────── */}
+      <Section tight>
+        <Reveal>
+          <div className="grid gap-5 md:grid-cols-2">
+            <Link
+              href="/for-homeowners"
+              className="group relative flex min-h-72 items-end overflow-hidden rounded-3xl"
+            >
+              <Image
+                src={img.homeLiving}
+                alt="Residential textile ceiling"
+                fill
+                className="img-quiet object-cover"
+                sizes="(min-width: 768px) 50vw, 100vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/25 to-transparent" />
+              <div className="relative p-8 text-paper md:p-10">
+                <Home size={22} className="text-paper/70" />
+                <h2 className="display mt-3 text-2xl md:text-3xl">For Homeowners</h2>
+                <p className="mt-2 max-w-sm text-sm text-paper/75">
+                  No dust, no cracks, no repainting — see what living under a PONGS ceiling feels like.
+                </p>
+                <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold">
+                  Explore <ArrowRight size={15} className="transition-transform group-hover:translate-x-1.5" />
+                </span>
+              </div>
+            </Link>
+            <Link
+              href="/for-architects"
+              className="group relative flex min-h-72 items-end overflow-hidden rounded-3xl"
+            >
+              <Image
+                src={img.museum}
+                alt="Architectural textile installation"
+                fill
+                className="img-quiet object-cover"
+                sizes="(min-width: 768px) 50vw, 100vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/25 to-transparent" />
+              <div className="relative p-8 text-paper md:p-10">
+                <Ruler size={22} className="text-paper/70" />
+                <h2 className="display mt-3 text-2xl md:text-3xl">For Architects & Designers</h2>
+                <p className="mt-2 max-w-sm text-sm text-paper/75">
+                  Specs, certifications, detailing, spec-clause builder — the complete technical hub.
+                </p>
+                <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold">
+                  Enter the hub <ArrowRight size={15} className="transition-transform group-hover:translate-x-1.5" />
+                </span>
+              </div>
+            </Link>
+          </div>
+        </Reveal>
+      </Section>
+
+      {/* ── Why — editorial split ─────────────────────────────── */}
       <Section>
-        <SectionHead
-          eyebrow="Why DESCOR®"
-          title="Everything gypsum and POP promised. None of what they cost you."
-          lead="One piece of German-engineered fabric, tensioned into a slim aluminium track. That single idea removes joints, cracks, dust, paint, and weeks of site work — and adds acoustics, backlighting and print that boards simply can't do."
-        />
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { icon: Clock3, t: "Installed in a day", d: "Dry, clean installation in furnished, occupied spaces. A living room takes hours; a full home, days — not weeks." },
-            { icon: Sparkles, t: "Seamless up to 5.05 m", d: "Woven wide in Germany so most Indian rooms are covered in a single, joint-free piece. No cracks. Ever." },
-            { icon: Volume2, t: "Acoustics built in", d: "DESCOR® PREMIUM Acoustic absorbs up to αw 0.90 (Class A) while looking like a plain, elegant ceiling." },
-            { icon: ShieldCheck, t: "Healthy & fire-safe", d: "PVC-free, VOC-free, OEKO-TEX® certified, B-s1,d0 fire class. Safe for bedrooms, hospitals and schools." },
-            { icon: Ruler, t: "Backlit & printed", d: "Translucent fabrics turn ceilings into soft light. PRINTERIEUR® prints any artwork edge-to-edge." },
-            { icon: Home, t: "Humid-city proof", d: "Polyester doesn't warp, flake, or grow fungus — unlike POP and gypsum in Mumbai or Chennai monsoons." },
-          ].map(({ icon: Icon, t, d }) => (
-            <div key={t} className="rounded-2xl border border-ink/10 p-7">
-              <Icon className="text-mist" size={26} />
-              <h3 className="mt-4 text-lg font-bold">{t}</h3>
-              <p className="mt-2 text-sm leading-relaxed opacity-65">{d}</p>
+        <Reveal>
+          <SectionHead
+            eyebrow="Why DESCOR®"
+            title="Everything gypsum and POP promised. None of what they cost you."
+          />
+        </Reveal>
+        <div className="grid gap-12 lg:grid-cols-2">
+          <Reveal>
+            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl lg:sticky lg:top-24">
+              <Image
+                src={img.kitchen}
+                alt="Seamless acoustic textile ceiling in a residential kitchen"
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 50vw, 100vw"
+              />
+              <div className="absolute bottom-5 left-5 rounded-full bg-ink/80 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-paper backdrop-blur">
+                One piece of fabric. Zero joints.
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="mt-10">
-          <CTA href="/compare" ghost>Compare with gypsum, POP & PVC</CTA>
+          </Reveal>
+          <div className="flex flex-col justify-center gap-2">
+            {whyPoints.map((p) => (
+              <Reveal key={p.n}>
+                <div className="group border-t border-ink/10 py-7 transition-colors last:border-b hover:bg-paper-2 md:px-4">
+                  <div className="flex items-baseline gap-6">
+                    <span className="display text-lg text-silver">{p.n}</span>
+                    <div>
+                      <h3 className="display text-xl md:text-2xl">{p.t}</h3>
+                      <p className="mt-2 max-w-lg text-sm leading-relaxed opacity-65 md:text-base">{p.d}</p>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+            <Reveal>
+              <div className="mt-6 md:px-4">
+                <CTA href="/compare" ghost>Compare with gypsum, POP & PVC</CTA>
+              </div>
+            </Reveal>
+          </div>
         </div>
       </Section>
 
       {/* ── Product strip ────────────────────────────────────── */}
       <Section dark>
-        <SectionHead
-          eyebrow="The DESCOR® System"
-          title="One system. Six ways to transform a space."
-        />
+        <Reveal>
+          <SectionHead eyebrow="The DESCOR® System" title="One system. Six ways to transform a space." />
+        </Reveal>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {variants.map((v) => (
-            <div key={v.name} className="rounded-2xl bg-ink-2 p-7">
-              <h3 className="text-base font-bold text-paper">{v.name}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-paper/70">{v.use}</p>
-              <p className="mt-4 border-t border-white/10 pt-3 text-xs text-paper/45">{v.specs}</p>
-            </div>
+          {variants.map((v, i) => (
+            <Reveal key={v.name}>
+              <div className="group h-full rounded-3xl border border-white/10 p-7 transition-colors hover:border-white/40">
+                <div className="display text-sm text-paper/40">0{i + 1}</div>
+                <h3 className="display mt-3 text-lg text-paper">{v.name}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-paper/65">{v.use}</p>
+                <p className="mt-5 border-t border-white/10 pt-3 font-mono text-[11px] leading-relaxed text-paper/45">
+                  {v.specs}
+                </p>
+              </div>
+            </Reveal>
           ))}
         </div>
-        <div className="mt-10">
-          <CTA href="/for-architects">Full technical specifications</CTA>
-        </div>
+        <Reveal>
+          <div className="mt-10">
+            <CTA href="/for-architects">Full technical specifications</CTA>
+          </div>
+        </Reveal>
       </Section>
 
-      {/* ── Applications ─────────────────────────────────────── */}
+      {/* ── Estimate wizard ──────────────────────────────────── */}
+      <Section>
+        <Reveal>
+          <SectionHead
+            eyebrow="Try it now"
+            title="Your ceiling, priced in sixty seconds."
+            lead="Three taps — space, size, look — and you'll know your indicative budget before you talk to anyone."
+          />
+          <EstimateWizard />
+        </Reveal>
+      </Section>
+
+      {/* ── Featured project ─────────────────────────────────── */}
       <Section muted>
-        <SectionHead
-          eyebrow="Where it works"
-          title="One material. Every kind of space."
-          lead="From a 200 sq ft bedroom to a 20,000 sq ft convention hall — the same slim track and seamless fabric scales to any brief."
-        />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { image: img.homeLiving, t: "Homes & Villas", d: "Living rooms, bedrooms, home theatres, pooja rooms" },
-            { image: img.heroAuditorium, t: "Auditoriums & Offices", d: "Acoustic ceilings that tame echo without panels" },
-            { image: img.restaurant, t: "Hotels & Restaurants", d: "Backlit and printed statement ceilings" },
-            { image: img.zoo, t: "Retail & Public Spaces", d: "Large-span installations, malls, showrooms, lobbies" },
-          ].map((a) => (
-            <Link key={a.t} href="/projects" className="group">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl">
-                <Image src={a.image} alt={a.t} fill className="img-quiet object-cover transition-transform duration-500 group-hover:scale-105" sizes="(min-width: 1024px) 25vw, 50vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink/85 to-transparent" />
-                <div className="absolute bottom-0 p-6 text-paper">
-                  <h3 className="text-lg font-bold">{a.t}</h3>
-                  <p className="mt-1 text-xs text-paper/70">{a.d}</p>
-                </div>
+        <Reveal>
+          <div className="grid items-center gap-10 lg:grid-cols-2">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
+              <Image
+                src={img.cafeteria}
+                alt="Manipal University cafeteria — DESCOR® acoustic ceiling by PONGS INDIA"
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 50vw, 100vw"
+              />
+            </div>
+            <div>
+              <p className="eyebrow">Featured Project · India</p>
+              <h2 className="display mt-4 text-3xl md:text-5xl">
+                Manipal University — featured by PONGS® Germany itself.
+              </h2>
+              <p className="mt-5 leading-relaxed opacity-70">
+                Our acoustic ceilings for Manipal University&apos;s auditorium
+                and cafeteria are showcased on the global PONGS® portfolio —
+                Indian execution, German standard. Thousands of students sit
+                under them every day.
+              </p>
+              <div className="mt-8">
+                <CTA href="/projects" ghost>Browse the project gallery</CTA>
               </div>
-            </Link>
-          ))}
-        </div>
+            </div>
+          </div>
+        </Reveal>
       </Section>
 
       {/* ── Heritage ─────────────────────────────────────────── */}
       <Section dark>
         <div className="grid gap-12 lg:grid-cols-2">
-          <div>
-            <p className="eyebrow">The PONGS® story</p>
+          <Reveal>
+            <p className="eyebrow !text-paper/50">The PONGS® story</p>
             <h2 className="display mt-4 text-3xl md:text-5xl">
               110+ years of German weaving. Now at home in India.
             </h2>
-          </div>
-          <div className="space-y-8">
+          </Reveal>
+          <div className="space-y-2">
             {[
               ["1913", "The PONGS story begins in Germany — over a century of textile engineering, from thread to finished fabric."],
               ["Today", "22.8+ million m² woven annually in Mühltroff, Germany, on looms up to 6.2 m wide — the world's widest architectural textiles."],
-              ["PONGS INDIA", "The official channel partner for architectural textiles in India: 1,000+ projects delivered by our own trained crews, with six experience centers — Bengaluru (HQ), Mumbai, Delhi NCR, Hyderabad, Chennai and Ahmedabad."],
+              ["PONGS INDIA", "The official channel partner for India: 1,000+ projects by our own trained crews, six experience centers — Bengaluru (HQ), Mumbai, Delhi NCR, Hyderabad, Chennai, Ahmedabad."],
             ].map(([year, text]) => (
-              <div key={year} className="flex gap-6 border-t border-white/10 pt-6">
-                <div className="display w-32 shrink-0 text-xl text-paper/50">{year}</div>
-                <p className="text-sm leading-relaxed text-paper/75 md:text-base">{text}</p>
-              </div>
+              <Reveal key={year}>
+                <div className="flex gap-6 border-t border-white/10 py-6">
+                  <div className="display w-36 shrink-0 text-xl text-paper/50">{year}</div>
+                  <p className="text-sm leading-relaxed text-paper/75 md:text-base">{text}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </Section>
 
-      {/* ── Featured project ─────────────────────────────────── */}
-      <Section>
-        <div className="grid items-center gap-10 lg:grid-cols-2">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
-            <Image
-              src={img.cafeteria}
-              alt="Manipal University cafeteria — DESCOR® acoustic ceiling by PONGS India"
-              fill
-              className="object-cover"
-              sizes="(min-width: 1024px) 50vw, 100vw"
-            />
-          </div>
-          <div>
-            <p className="eyebrow">Featured Project · India</p>
-            <h2 className="display mt-3 text-3xl md:text-4xl">
-              Manipal University — featured by PONGS® Germany itself.
-            </h2>
-            <p className="mt-5 leading-relaxed opacity-70">
-              Our acoustic textile ceilings for Manipal University&apos;s
-              auditorium and cafeteria are showcased on the global PONGS®
-              projects portfolio — Indian execution, German standard. Thousands
-              of students sit under them every day; the rooms sound as good as
-              they look.
-            </p>
-            <div className="mt-8">
-              <CTA href="/projects" ghost>Browse the project gallery</CTA>
-            </div>
-          </div>
-        </div>
-      </Section>
-
       {/* ── Testimonials ─────────────────────────────────────── */}
-      <Section dark>
-        <SectionHead eyebrow="What clients say" title="Trusted by the people who measure twice." />
+      <Section>
+        <Reveal>
+          <SectionHead eyebrow="What clients say" title="Trusted by the people who measure twice." />
+        </Reveal>
         <div className="grid gap-5 md:grid-cols-3">
           {testimonials.map((t) => (
-            <figure key={t.quote} className="rounded-2xl bg-ink-2 p-8">
-              <blockquote className="text-sm leading-relaxed text-paper/85 md:text-base">
-                &ldquo;{t.quote}&rdquo;
-              </blockquote>
-              <figcaption className="mt-6 text-xs uppercase tracking-widest text-paper">
-                {t.name} · <span className="text-paper/50">{t.role}</span>
-              </figcaption>
-            </figure>
+            <Reveal key={t.quote}>
+              <figure className="h-full rounded-3xl bg-paper-2 p-8">
+                <div className="display text-5xl leading-none text-silver">&ldquo;</div>
+                <blockquote className="mt-2 text-sm leading-relaxed opacity-80 md:text-base">{t.quote}</blockquote>
+                <figcaption className="mt-6 text-xs font-semibold uppercase tracking-widest">
+                  {t.name} · <span className="opacity-50">{t.role}</span>
+                </figcaption>
+              </figure>
+            </Reveal>
           ))}
         </div>
       </Section>
 
       {/* ── Experience centers + CTA ─────────────────────────── */}
-      <Section>
-        <SectionHead
-          eyebrow="See it. Touch it. Hear it."
-          title="Six experience centers across India."
-          lead="A textile ceiling has to be experienced — the seamless surface, the backlit glow, the acoustic hush. Walk into any of our centers, or ask us to bring samples to your site or studio."
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {centers.map((c) => (
-            <div key={c.city} className="flex items-baseline justify-between rounded-xl border border-ink/10 px-6 py-5">
-              <span className="text-lg font-bold">{c.city}</span>
-              <span className="text-xs uppercase tracking-wider opacity-50">{c.note}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-10 flex flex-wrap gap-4">
-          <CTA href="/contact#quote">Get a Quick Quote</CTA>
-          <CTA href="/contact" ghost>Book an experience center visit</CTA>
-        </div>
+      <Section dark>
+        <Reveal>
+          <SectionHead
+            eyebrow="See it. Touch it. Hear it."
+            title="Six experience centers across India."
+            lead="A textile ceiling has to be experienced — the seamless surface, the backlit glow, the acoustic hush. Walk in, or ask us to bring samples to your site."
+          />
+        </Reveal>
+        <Reveal>
+          <div className="grid gap-px overflow-hidden rounded-3xl bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+            {centers.map((c) => (
+              <div key={c.city} className="group bg-ink p-7 transition-colors hover:bg-ink-2">
+                <div className="display text-2xl">{c.city}</div>
+                <div className="mt-2 text-[11px] uppercase tracking-[0.2em] text-paper/45">{c.note}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-10 flex flex-wrap gap-4">
+            <CTA href="/contact#quote">Get a Quick Quote</CTA>
+            <CTA href="/contact" ghost>Book a center visit</CTA>
+          </div>
+        </Reveal>
       </Section>
     </>
   );

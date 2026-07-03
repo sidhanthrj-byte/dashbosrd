@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { FileDown, Building2 } from "lucide-react";
 import { Section, SectionHead, CTA, Faq } from "@/components/ui";
+import { SpecBuilder } from "@/components/SpecBuilder";
+import { Reveal } from "@/components/Reveal";
 import { variants, certifications, installSteps, architectFaqs, img } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -39,8 +41,20 @@ export default function ArchitectsPage() {
         </div>
       </section>
 
-      {/* Variants with full specs */}
+      {/* Spec builder — the architect's toy */}
       <Section>
+        <Reveal>
+          <SectionHead
+            eyebrow="Interactive · Spec builder"
+            title="Pick the application. Copy the clause."
+            lead="Choose your project type and get the recommended DESCOR® system with a ready-to-paste specification clause for your BOQ or tender document."
+          />
+          <SpecBuilder />
+        </Reveal>
+      </Section>
+
+      {/* Variants with full specs */}
+      <Section muted>
         <SectionHead
           eyebrow="Product Data"
           title="The DESCOR® range, variant by variant."
