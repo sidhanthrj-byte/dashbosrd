@@ -16,7 +16,7 @@ export default function HomePage() {
   return (
     <>
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative flex min-h-[88vh] items-end bg-ink text-paper">
+      <section className="on-dark relative flex min-h-[92vh] items-end bg-ink text-paper">
         <Image
           src={img.heroAuditorium}
           alt="DESCOR® acoustic textile ceiling — Manipal University auditorium, India"
@@ -27,10 +27,10 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
         <div className="relative mx-auto w-full max-w-7xl px-5 pb-20 pt-40">
-          <p className="eyebrow">Official Channel Partner · PONGS® Germany</p>
-          <h1 className="display mt-4 max-w-4xl text-4xl md:text-7xl">
+          <p className="eyebrow text-paper/60">PONGS INDIA · Official Channel Partner of PONGS® Germany</p>
+          <h1 className="display mt-5 max-w-5xl text-5xl md:text-8xl">
             The ceiling, reinvented.
-            <span className="block text-brass-2">In fabric. In a day.</span>
+            <span className="block text-paper/50">In fabric. In a day.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-paper/80 md:text-lg">
             DESCOR® textile stretch ceilings & walls — seamless up to 5 metres,
@@ -52,7 +52,7 @@ export default function HomePage() {
             href="/for-architects"
             className="group relative overflow-hidden rounded-2xl bg-ink p-9 text-paper transition-transform hover:-translate-y-1 md:p-12"
           >
-            <Ruler className="text-brass" size={30} />
+            <Ruler className="text-mist" size={30} />
             <p className="eyebrow mt-6">I am an Architect / Interior Designer</p>
             <h2 className="display mt-2 text-2xl md:text-4xl">
               Specifications, certifications, installation details.
@@ -62,7 +62,7 @@ export default function HomePage() {
               certificates, detailing for services integration, timelines and
               commercial terms — everything you need to specify with confidence.
             </p>
-            <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-brass-2">
+            <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-paper">
               Enter the technical hub <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </span>
           </Link>
@@ -71,7 +71,7 @@ export default function HomePage() {
             href="/for-homeowners"
             className="group relative overflow-hidden rounded-2xl bg-paper-2 p-9 transition-transform hover:-translate-y-1 md:p-12"
           >
-            <Home className="text-brass" size={30} />
+            <Home className="text-mist" size={30} />
             <p className="eyebrow mt-6">I am a Homeowner</p>
             <h2 className="display mt-2 text-2xl md:text-4xl">
               A beautiful, healthy home — without the renovation chaos.
@@ -81,7 +81,7 @@ export default function HomePage() {
               cracks, no repainting — ever. Real homes, real reviews, and a
               ceiling that goes up in a single day.
             </p>
-            <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-brass">
+            <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-mist">
               Explore for your home <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </span>
           </Link>
@@ -93,7 +93,7 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label}>
-              <div className="display text-4xl text-brass-2 md:text-5xl">{s.value}</div>
+              <div className="display text-4xl text-paper md:text-5xl">{s.value}</div>
               <div className="mt-2 text-xs uppercase tracking-widest text-paper/50">{s.label}</div>
             </div>
           ))}
@@ -117,7 +117,7 @@ export default function HomePage() {
             { icon: Home, t: "Humid-city proof", d: "Polyester doesn't warp, flake, or grow fungus — unlike POP and gypsum in Mumbai or Chennai monsoons." },
           ].map(({ icon: Icon, t, d }) => (
             <div key={t} className="rounded-2xl border border-ink/10 p-7">
-              <Icon className="text-brass" size={26} />
+              <Icon className="text-mist" size={26} />
               <h3 className="mt-4 text-lg font-bold">{t}</h3>
               <p className="mt-2 text-sm leading-relaxed opacity-65">{d}</p>
             </div>
@@ -137,7 +137,7 @@ export default function HomePage() {
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {variants.map((v) => (
             <div key={v.name} className="rounded-2xl bg-ink-2 p-7">
-              <h3 className="text-base font-bold text-brass-2">{v.name}</h3>
+              <h3 className="text-base font-bold text-paper">{v.name}</h3>
               <p className="mt-2 text-sm leading-relaxed text-paper/70">{v.use}</p>
               <p className="mt-4 border-t border-white/10 pt-3 text-xs text-paper/45">{v.specs}</p>
             </div>
@@ -145,6 +145,58 @@ export default function HomePage() {
         </div>
         <div className="mt-10">
           <CTA href="/for-architects">Full technical specifications</CTA>
+        </div>
+      </Section>
+
+      {/* ── Applications ─────────────────────────────────────── */}
+      <Section muted>
+        <SectionHead
+          eyebrow="Where it works"
+          title="One material. Every kind of space."
+          lead="From a 200 sq ft bedroom to a 20,000 sq ft convention hall — the same slim track and seamless fabric scales to any brief."
+        />
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { image: img.homeLiving, t: "Homes & Villas", d: "Living rooms, bedrooms, home theatres, pooja rooms" },
+            { image: img.heroAuditorium, t: "Auditoriums & Offices", d: "Acoustic ceilings that tame echo without panels" },
+            { image: img.restaurant, t: "Hotels & Restaurants", d: "Backlit and printed statement ceilings" },
+            { image: img.zoo, t: "Retail & Public Spaces", d: "Large-span installations, malls, showrooms, lobbies" },
+          ].map((a) => (
+            <Link key={a.t} href="/projects" className="group">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl">
+                <Image src={a.image} alt={a.t} fill className="img-quiet object-cover transition-transform duration-500 group-hover:scale-105" sizes="(min-width: 1024px) 25vw, 50vw" />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/85 to-transparent" />
+                <div className="absolute bottom-0 p-6 text-paper">
+                  <h3 className="text-lg font-bold">{a.t}</h3>
+                  <p className="mt-1 text-xs text-paper/70">{a.d}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      {/* ── Heritage ─────────────────────────────────────────── */}
+      <Section dark>
+        <div className="grid gap-12 lg:grid-cols-2">
+          <div>
+            <p className="eyebrow">The PONGS® story</p>
+            <h2 className="display mt-4 text-3xl md:text-5xl">
+              110+ years of German weaving. Now at home in India.
+            </h2>
+          </div>
+          <div className="space-y-8">
+            {[
+              ["1913", "The PONGS story begins in Germany — over a century of textile engineering, from thread to finished fabric."],
+              ["Today", "22.8+ million m² woven annually in Mühltroff, Germany, on looms up to 6.2 m wide — the world's widest architectural textiles."],
+              ["PONGS INDIA", "The official channel partner for architectural textiles in India: 1,000+ projects delivered by our own trained crews, with six experience centers — Bengaluru (HQ), Mumbai, Delhi NCR, Hyderabad, Chennai and Ahmedabad."],
+            ].map(([year, text]) => (
+              <div key={year} className="flex gap-6 border-t border-white/10 pt-6">
+                <div className="display w-32 shrink-0 text-xl text-paper/50">{year}</div>
+                <p className="text-sm leading-relaxed text-paper/75 md:text-base">{text}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </Section>
 
@@ -188,7 +240,7 @@ export default function HomePage() {
               <blockquote className="text-sm leading-relaxed text-paper/85 md:text-base">
                 &ldquo;{t.quote}&rdquo;
               </blockquote>
-              <figcaption className="mt-6 text-xs uppercase tracking-widest text-brass-2">
+              <figcaption className="mt-6 text-xs uppercase tracking-widest text-paper">
                 {t.name} · <span className="text-paper/50">{t.role}</span>
               </figcaption>
             </figure>

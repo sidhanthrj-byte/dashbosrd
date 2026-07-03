@@ -1,14 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #14161a;
-  --color-ink-2: #1e2126;
-  --color-ink-3: #2a2e35;
-  --color-paper: #faf9f6;
-  --color-paper-2: #f1efe9;
-  --color-brass: #b08d57;
-  --color-brass-2: #c9a76c;
-  --color-mist: #9aa0a8;
+  /* Palette lifted from pongs.com (Divi child theme):
+     primary #000, surfaces #fff/#f4f4f4, greys #707070/#bfbfbf.
+     Strict monochrome — no colour accents. */
+  --color-ink: #0d0d0d;
+  --color-ink-2: #161616;
+  --color-ink-3: #232323;
+  --color-paper: #ffffff;
+  --color-paper-2: #f4f4f4;
+  --color-mist: #707070;
+  --color-silver: #bfbfbf;
+  /* legacy token names kept for utility classes; now neutral greys */
+  --color-brass: #707070;
+  --color-brass-2: #d9d9d9;
   --font-sans: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
 }
 
@@ -24,18 +29,43 @@ body {
 }
 
 ::selection {
-  background: var(--color-brass);
+  background: var(--color-ink);
   color: #fff;
 }
 
 .eyebrow {
-  @apply text-[11px] font-semibold uppercase tracking-[0.22em] text-brass;
+  @apply text-[11px] font-semibold uppercase tracking-[0.28em] text-mist;
 }
 
 .display {
-  @apply font-bold leading-[1.05] tracking-[-0.02em];
+  @apply font-bold leading-[1.02] tracking-[-0.03em];
+}
+
+/* PONGS-style imagery: quiet until you engage */
+.img-quiet {
+  filter: grayscale(35%) contrast(1.02);
+  transition: filter 0.5s ease, transform 0.6s ease;
+}
+.group:hover .img-quiet,
+a:hover .img-quiet {
+  filter: grayscale(0%);
+}
+
+.hairline {
+  @apply border-t border-ink/10;
 }
 
 details.faq summary::-webkit-details-marker {
   display: none;
+}
+
+/* Monochrome buttons that invert on dark surfaces (.on-dark) */
+.btn-solid {
+  @apply inline-flex items-center gap-2 rounded-full bg-ink px-7 py-3.5 text-sm font-semibold text-paper transition-colors hover:bg-ink-3;
+}
+.on-dark .btn-solid {
+  @apply bg-paper text-ink hover:bg-silver;
+}
+.btn-ghost {
+  @apply inline-flex items-center gap-2 rounded-full border border-current px-7 py-3.5 text-sm font-semibold transition-opacity hover:opacity-60;
 }

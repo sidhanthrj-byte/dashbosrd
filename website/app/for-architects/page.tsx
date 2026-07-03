@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function ArchitectsPage() {
   return (
     <>
-      <section className="relative bg-ink py-24 text-paper md:py-32">
+      <section className="on-dark relative bg-ink py-24 text-paper md:py-32">
         <Image
           src={img.museum}
           alt="Large-span architectural textile installation"
@@ -58,7 +58,7 @@ export default function ArchitectsPage() {
             <tbody className="divide-y divide-ink/10">
               {variants.map((v) => (
                 <tr key={v.name} className="align-top">
-                  <td className="px-6 py-5 font-bold text-brass">{v.name}</td>
+                  <td className="px-6 py-5 font-bold text-mist">{v.name}</td>
                   <td className="px-6 py-5 opacity-75">{v.use}</td>
                   <td className="px-6 py-5 opacity-75">{v.specs}</td>
                 </tr>
@@ -90,7 +90,7 @@ export default function ArchitectsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {certifications.map((c) => (
             <div key={c.name} className="rounded-xl bg-ink-2 p-6">
-              <div className="text-sm font-bold text-brass-2">{c.name}</div>
+              <div className="text-sm font-bold text-paper">{c.name}</div>
               <p className="mt-2 text-xs leading-relaxed text-paper/60">{c.desc}</p>
             </div>
           ))}
@@ -107,15 +107,15 @@ export default function ArchitectsPage() {
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {installSteps.map((s) => (
             <div key={s.step} className="rounded-2xl border border-ink/10 p-7">
-              <div className="display text-4xl text-brass">{s.step}</div>
+              <div className="display text-4xl text-mist">{s.step}</div>
               <h3 className="mt-4 text-base font-bold">{s.title}</h3>
               <p className="mt-2 text-sm leading-relaxed opacity-65">{s.desc}</p>
             </div>
           ))}
         </div>
-        <div className="mt-10 rounded-2xl bg-ink p-8 text-paper md:flex md:items-center md:justify-between">
+        <div className="mt-10 on-dark rounded-2xl bg-ink p-8 text-paper md:flex md:items-center md:justify-between">
           <div className="flex items-start gap-4">
-            <Building2 className="mt-1 shrink-0 text-brass" />
+            <Building2 className="mt-1 shrink-0 text-mist" />
             <p className="max-w-2xl text-sm leading-relaxed text-paper/80">
               <strong className="text-paper">Typical project timeline:</strong>{" "}
               site survey → quotation in 48 hours → installation in 2–3 weeks
@@ -134,7 +134,7 @@ export default function ArchitectsPage() {
       <Section dark tight>
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <FileDown className="text-brass" size={28} />
+            <FileDown className="text-mist" size={28} />
             <div>
               <h3 className="text-lg font-bold">Datasheets, DWG details & certificates</h3>
               <p className="text-sm text-paper/60">

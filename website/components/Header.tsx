@@ -22,7 +22,7 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
         <Link href="/" className="flex items-baseline gap-2" onClick={() => setOpen(false)}>
           <span className="text-xl font-bold tracking-[0.18em]">PONGS</span>
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brass">India</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-mist">India</span>
         </Link>
 
         <nav className="hidden items-center gap-7 lg:flex">
@@ -30,8 +30,8 @@ export function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className={`text-[13px] font-medium tracking-wide transition-colors hover:text-brass-2 ${
-                pathname === item.href ? "text-brass-2" : "text-paper/80"
+              className={`text-[13px] font-medium tracking-wide transition-colors hover:text-paper ${
+                pathname === item.href ? "text-paper" : "text-paper/80"
               }`}
             >
               {item.label}
@@ -39,7 +39,7 @@ export function Header() {
           ))}
           <Link
             href="/contact#quote"
-            className="rounded-full bg-brass px-5 py-2 text-[13px] font-semibold text-ink transition-colors hover:bg-brass-2"
+            className="rounded-full bg-paper px-5 py-2 text-[13px] font-semibold text-ink transition-colors hover:bg-silver"
           >
             Get a Quote
           </Link>
@@ -69,7 +69,7 @@ export function Header() {
           <Link
             href="/contact#quote"
             onClick={() => setOpen(false)}
-            className="mt-4 flex items-center justify-center gap-2 rounded-full bg-brass px-5 py-3 text-sm font-semibold text-ink"
+            className="mt-4 flex items-center justify-center gap-2 rounded-full bg-paper px-5 py-3 text-sm font-semibold text-ink"
           >
             <Phone size={15} /> Get a Quote
           </Link>

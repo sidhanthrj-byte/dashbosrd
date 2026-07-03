@@ -20,14 +20,14 @@ export default function ContactPage() {
           lead="Call, WhatsApp, or walk into an experience center. If you send room photos or drawings, you'll have an indicative quote within 48 hours."
         />
         <div className="flex flex-wrap gap-8 text-sm">
-          <a className="flex items-center gap-2 text-paper/80 hover:text-brass-2" href={`tel:${site.phone.replace(/\s/g, "")}`}>
-            <Phone size={16} className="text-brass" /> {site.phone}
+          <a className="flex items-center gap-2 text-paper/80 hover:text-paper" href={`tel:${site.phone.replace(/\s/g, "")}`}>
+            <Phone size={16} className="text-mist" /> {site.phone}
           </a>
-          <a className="flex items-center gap-2 text-paper/80 hover:text-brass-2" href={`mailto:${site.email}`}>
-            <Mail size={16} className="text-brass" /> {site.email}
+          <a className="flex items-center gap-2 text-paper/80 hover:text-paper" href={`mailto:${site.email}`}>
+            <Mail size={16} className="text-mist" /> {site.email}
           </a>
-          <a className="flex items-center gap-2 text-paper/80 hover:text-brass-2" href={site.instagram} target="_blank" rel="noreferrer">
-            <AtSign size={16} className="text-brass" /> @pongsindia
+          <a className="flex items-center gap-2 text-paper/80 hover:text-paper" href={site.instagram} target="_blank" rel="noreferrer">
+            <AtSign size={16} className="text-mist" /> @pongsindia
           </a>
         </div>
       </Section>
@@ -46,7 +46,7 @@ export default function ContactPage() {
             <ul className="space-y-4">
               {centers.map((c) => (
                 <li key={c.city} className="flex items-start gap-3 rounded-xl border border-ink/10 p-5">
-                  <MapPin size={18} className="mt-0.5 shrink-0 text-brass" />
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-mist" />
                   <div>
                     <div className="font-bold">{c.city}</div>
                     <div className="text-sm opacity-55">{c.note}</div>

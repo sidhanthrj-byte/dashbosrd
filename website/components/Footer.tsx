@@ -8,7 +8,7 @@ export function Footer() {
         <div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold tracking-[0.18em]">PONGS</span>
-            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brass">India</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-mist">India</span>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-paper/60">
             Official channel partner of PONGS® Germany for architectural
@@ -20,11 +20,11 @@ export function Footer() {
         <div>
           <h4 className="eyebrow">Explore</h4>
           <ul className="mt-4 space-y-2 text-sm text-paper/70">
-            <li><Link className="hover:text-brass-2" href="/for-architects">For Architects & Designers</Link></li>
-            <li><Link className="hover:text-brass-2" href="/for-homeowners">For Homeowners</Link></li>
-            <li><Link className="hover:text-brass-2" href="/projects">Projects</Link></li>
-            <li><Link className="hover:text-brass-2" href="/compare">DESCOR® vs Alternatives</Link></li>
-            <li><Link className="hover:text-brass-2" href="/contact">Contact & Quick Quote</Link></li>
+            <li><Link className="hover:text-paper" href="/for-architects">For Architects & Designers</Link></li>
+            <li><Link className="hover:text-paper" href="/for-homeowners">For Homeowners</Link></li>
+            <li><Link className="hover:text-paper" href="/projects">Projects</Link></li>
+            <li><Link className="hover:text-paper" href="/compare">DESCOR® vs Alternatives</Link></li>
+            <li><Link className="hover:text-paper" href="/contact">Contact & Quick Quote</Link></li>
           </ul>
         </div>
 
@@ -34,7 +34,7 @@ export function Footer() {
             {centers.map((c) => (
               <li key={c.city}>
                 {c.city}
-                {c.city === "Bengaluru" && <span className="ml-2 text-[10px] uppercase tracking-wider text-brass">HQ</span>}
+                {c.city === "Bengaluru" && <span className="ml-2 text-[10px] uppercase tracking-wider text-mist">HQ</span>}
               </li>
             ))}
           </ul>
@@ -43,9 +43,9 @@ export function Footer() {
         <div>
           <h4 className="eyebrow">Get in Touch</h4>
           <ul className="mt-4 space-y-2 text-sm text-paper/70">
-            <li><a className="hover:text-brass-2" href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a></li>
-            <li><a className="hover:text-brass-2" href={`mailto:${site.email}`}>{site.email}</a></li>
-            <li><a className="hover:text-brass-2" href={site.instagram} target="_blank" rel="noreferrer">Instagram @pongsindia</a></li>
+            <li><a className="hover:text-paper" href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a></li>
+            <li><a className="hover:text-paper" href={`mailto:${site.email}`}>{site.email}</a></li>
+            <li><a className="hover:text-paper" href={site.instagram} target="_blank" rel="noreferrer">Instagram @pongsindia</a></li>
           </ul>
         </div>
       </div>

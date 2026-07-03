@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Check } from "lucide-react";
 import { Section, SectionHead, CTA } from "@/components/ui";
+import { CostCalculator } from "@/components/CostCalculator";
 import { comparison } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export default function ComparePage() {
               <tr className="bg-ink text-paper">
                 <th className="px-5 py-4 font-semibold">Criterion</th>
                 {comparison.columns.map((c, i) => (
-                  <th key={c} className={`px-5 py-4 font-semibold ${i === 0 ? "text-brass-2" : "text-paper/70"}`}>
+                  <th key={c} className={`px-5 py-4 font-semibold ${i === 0 ? "text-paper" : "text-paper/70"}`}>
                     {c}
                   </th>
                 ))}
@@ -38,8 +39,8 @@ export default function ComparePage() {
                 <tr key={row.label} className="align-top">
                   <td className="px-5 py-4 font-bold">{row.label}</td>
                   {row.values.map((v, i) => (
-                    <td key={i} className={`px-5 py-4 ${i === 0 ? "bg-brass/5 font-medium" : "opacity-65"}`}>
-                      {i === 0 && <Check size={14} className="mb-1 text-brass" />}
+                    <td key={i} className={`px-5 py-4 ${i === 0 ? "bg-ink/4 font-medium" : "opacity-65"}`}>
+                      {i === 0 && <Check size={14} className="mb-1 text-mist" />}
                       {v}
                     </td>
                   ))}
@@ -71,6 +72,10 @@ export default function ComparePage() {
               physically cannot achieve. Same category, different league.
             </p>
           </div>
+        </div>
+
+        <div className="mt-12">
+          <CostCalculator />
         </div>
 
         <div className="mt-10 text-center">

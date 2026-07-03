@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function HomeownersPage() {
   return (
     <>
-      <section className="relative bg-ink py-24 text-paper md:py-32">
+      <section className="on-dark relative bg-ink py-24 text-paper md:py-32">
         <Image
           src={img.homeLiving}
           alt="Luxury living room with seamless DESCOR® textile ceiling"
@@ -57,7 +57,7 @@ export default function HomeownersPage() {
             { icon: BadgeCheck, t: "German quality, local team", d: "Fabric woven in Germany for 110+ years; installed by our own trained PONGS India crews — 1,000+ projects done." },
           ].map(({ icon: Icon, t, d }) => (
             <div key={t} className="rounded-2xl border border-ink/10 p-7">
-              <Icon className="text-brass" size={26} />
+              <Icon className="text-mist" size={26} />
               <h3 className="mt-4 text-lg font-bold">{t}</h3>
               <p className="mt-2 text-sm leading-relaxed opacity-65">{d}</p>
             </div>
@@ -83,7 +83,7 @@ export default function HomeownersPage() {
                 <Image src={c.image} alt={c.t} fill className="object-cover" sizes="(min-width: 768px) 33vw, 100vw" />
               </div>
               <figcaption className="p-6">
-                <h3 className="font-bold text-brass-2">{c.t}</h3>
+                <h3 className="font-bold text-paper">{c.t}</h3>
                 <p className="mt-2 text-sm text-paper/65">{c.d}</p>
               </figcaption>
             </figure>
@@ -104,7 +104,7 @@ export default function HomeownersPage() {
             ["3", "One-day installation", "Clean, dry, quiet installation with your furniture in place. We vacuum, we hand over, you enjoy it for decades."],
           ].map(([n, t, d]) => (
             <div key={n} className="rounded-2xl bg-paper-2 p-8">
-              <div className="display text-5xl text-brass">{n}</div>
+              <div className="display text-5xl text-mist">{n}</div>
               <h3 className="mt-4 text-lg font-bold">{t}</h3>
               <p className="mt-2 text-sm leading-relaxed opacity-65">{d}</p>
             </div>
@@ -118,11 +118,11 @@ export default function HomeownersPage() {
         <div className="grid gap-5 md:grid-cols-3">
           {testimonials.map((t) => (
             <figure key={t.quote} className="rounded-2xl bg-ink-2 p-8">
-              <div className="text-brass-2">★★★★★</div>
+              <div className="text-paper">★★★★★</div>
               <blockquote className="mt-4 text-sm leading-relaxed text-paper/85">
                 &ldquo;{t.quote}&rdquo;
               </blockquote>
-              <figcaption className="mt-6 text-xs uppercase tracking-widest text-brass-2">
+              <figcaption className="mt-6 text-xs uppercase tracking-widest text-paper">
                 {t.name} · <span className="text-paper/50">{t.role}</span>
               </figcaption>
             </figure>
@@ -134,7 +134,7 @@ export default function HomeownersPage() {
       <Section>
         <SectionHead eyebrow="Honest answers" title="Questions every homeowner asks us." />
         <Faq items={homeownerFaqs} />
-        <div className="mt-14 rounded-2xl bg-ink p-10 text-center text-paper">
+        <div className="mt-14 on-dark rounded-2xl bg-ink p-10 text-center text-paper">
           <h3 className="display text-2xl md:text-4xl">See it before you decide.</h3>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-paper/70">
             Experience centers in {centers.map((c) => c.city).join(", ")}. Walk

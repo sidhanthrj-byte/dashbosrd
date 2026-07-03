@@ -30,7 +30,7 @@ export function QuoteForm() {
   ].join("\n");
 
   const inputCls =
-    "w-full rounded-lg border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-brass";
+    "w-full rounded-lg border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-ink";
 
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={(e) => e.preventDefault()}>
@@ -73,13 +73,13 @@ export function QuoteForm() {
           href={`https://wa.me/${site.whatsapp}?text=${encodeURIComponent(body)}`}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-full bg-brass px-7 py-3.5 text-sm font-semibold text-ink transition-colors hover:bg-brass-2"
+          className="inline-flex items-center gap-2 rounded-full bg-paper px-7 py-3.5 text-sm font-semibold text-ink transition-colors hover:bg-silver"
         >
           <MessageCircle size={16} /> Send on WhatsApp
         </a>
         <a
           href={`mailto:${site.email}?subject=${encodeURIComponent("Quote request — " + form.name)}&body=${encodeURIComponent(body)}`}
-          className="inline-flex items-center gap-2 rounded-full border border-ink/30 px-7 py-3.5 text-sm font-semibold transition-colors hover:border-brass hover:text-brass"
+          className="inline-flex items-center gap-2 rounded-full border border-ink/30 px-7 py-3.5 text-sm font-semibold transition-colors hover:border-ink hover:text-ink"
         >
           <Mail size={16} /> Send by Email
         </a>
