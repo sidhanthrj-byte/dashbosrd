@@ -49,6 +49,8 @@ export const img = {
   museum:
     "https://www.pongs.com/wp-content/uploads/2024/09/DJI_20240822170054_0044_D-bearb-scaled.jpg",
   zoo: "https://www.pongs.com/wp-content/uploads/2023/08/02_DSC03433-Kopie2-scaled.jpg",
+  lightCeiling:
+    "https://www.pongs.com/wp-content/uploads/2023/08/PONGS-WCP-0098.jpg",
   event:
     "https://www.pongs.com/wp-content/uploads/2023/08/AVENTEM1801_1385-Kopie.jpg",
 };

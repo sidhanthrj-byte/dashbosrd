@@ -58,10 +58,26 @@ function PersonaSwitch({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const pathname = usePathname();
 
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setHidden(y > 120 && y > last);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-ink/90 text-paper backdrop-blur-md">
+    <header
+      className={`sticky top-0 z-50 border-b border-white/10 bg-ink/90 text-paper backdrop-blur-md transition-transform duration-300 ${
+        hidden && !open ? "-translate-y-full" : ""
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5">
         <Link href="/" className="flex items-baseline gap-2" onClick={() => setOpen(false)}>
           <span className="display text-xl font-bold tracking-[0.16em]">PONGS</span>

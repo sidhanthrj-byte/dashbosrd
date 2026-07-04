@@ -3,8 +3,10 @@ import Link from "next/link";
 import { ArrowRight, Ruler, Home } from "lucide-react";
 import { Section, SectionHead, CTA } from "@/components/ui";
 import { AudienceGate } from "@/components/AudienceGate";
+import { Ticker } from "@/components/Ticker";
 import { StatBar } from "@/components/StatBar";
 import { EstimateWizard } from "@/components/EstimateWizard";
+import { InstallAnimation } from "@/components/InstallAnimation";
 import { Reveal } from "@/components/Reveal";
 import { img, centers, variants, testimonials } from "@/lib/data";
 
@@ -48,22 +50,33 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
         <div className="relative mx-auto w-full max-w-7xl px-5 pb-24 pt-40">
-          <p className="eyebrow text-paper/60">PONGS INDIA · Official Channel Partner of PONGS® Germany</p>
-          <h1 className="display mt-6 max-w-5xl text-5xl md:text-8xl">
+          <p className="hero-in eyebrow text-paper/60">PONGS INDIA · Official Channel Partner of PONGS® Germany</p>
+          <h1 className="hero-in display mt-6 max-w-5xl text-5xl md:text-8xl" style={{ animationDelay: "0.12s" }}>
             The ceiling, reinvented.
             <span className="block text-paper/50">In fabric. In a day.</span>
           </h1>
-          <p className="mt-7 max-w-2xl text-base leading-relaxed text-paper/80 md:text-lg">
+          <p
+            className="hero-in mt-7 max-w-2xl text-base leading-relaxed text-paper/80 md:text-lg"
+            style={{ animationDelay: "0.24s" }}
+          >
             DESCOR® textile stretch ceilings & walls — seamless up to 5 metres,
             acoustically engineered, PVC-free and fire-certified. Made in
             Germany for 110+ years. 1,000+ projects across India.
           </p>
-          <div className="mt-10 flex flex-wrap gap-4">
+          <div className="hero-in mt-10 flex flex-wrap gap-4" style={{ animationDelay: "0.36s" }}>
             <CTA href="/contact#quote">Get a Quick Quote</CTA>
             <CTA href="/projects" ghost>See Our Projects</CTA>
           </div>
         </div>
+        <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 md:block" aria-hidden>
+          <div className="flex h-10 w-6 items-start justify-center rounded-full border border-white/30 p-1.5">
+            <div className="scroll-dot h-1.5 w-1.5 rounded-full bg-paper/80" />
+          </div>
+        </div>
       </section>
+
+      {/* ── Trust ticker ─────────────────────────────────────── */}
+      <Ticker />
 
       {/* ── Stats ────────────────────────────────────────────── */}
       <Section dark tight>
@@ -168,6 +181,18 @@ export default function HomePage() {
             </Reveal>
           </div>
         </div>
+      </Section>
+
+      {/* ── Install animation ────────────────────────────────── */}
+      <Section muted>
+        <Reveal>
+          <SectionHead
+            eyebrow="How it goes in"
+            title="Watch a ceiling happen."
+            lead="A live cross-section of the DESCOR® system — from bare slab to lights-on in four moves. This is why we can install in a day."
+          />
+          <InstallAnimation />
+        </Reveal>
       </Section>
 
       {/* ── Product strip ────────────────────────────────────── */}

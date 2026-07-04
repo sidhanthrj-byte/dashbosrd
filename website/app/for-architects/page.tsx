@@ -3,6 +3,7 @@ import Image from "next/image";
 import { FileDown, Building2 } from "lucide-react";
 import { Section, SectionHead, CTA, Faq } from "@/components/ui";
 import { SpecBuilder } from "@/components/SpecBuilder";
+import { InstallAnimation } from "@/components/InstallAnimation";
 import { Reveal } from "@/components/Reveal";
 import { variants, certifications, installSteps, architectFaqs, img } from "@/lib/data";
 
@@ -118,6 +119,11 @@ export default function ArchitectsPage() {
           title="Four steps. One day per space. Zero wet work."
           lead="Installation is by PONGS India trained crews on the German DESCOR® profile system — not third-party contractors."
         />
+        <Reveal>
+          <div className="mb-10">
+            <InstallAnimation />
+          </div>
+        </Reveal>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {installSteps.map((s) => (
             <div key={s.step} className="rounded-2xl border border-ink/10 p-7">
