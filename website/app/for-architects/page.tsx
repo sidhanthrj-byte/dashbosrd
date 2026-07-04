@@ -4,6 +4,8 @@ import { FileDown, Building2 } from "lucide-react";
 import { Section, SectionHead, CTA, Faq } from "@/components/ui";
 import { SpecBuilder } from "@/components/SpecBuilder";
 import { InstallAnimation } from "@/components/InstallAnimation";
+import { SeamCalculator } from "@/components/SeamCalculator";
+import { AcousticDemo } from "@/components/AcousticDemo";
 import { Reveal } from "@/components/Reveal";
 import { variants, certifications, installSteps, architectFaqs, img } from "@/lib/data";
 
@@ -93,6 +95,30 @@ export default function ArchitectsPage() {
             </div>
           ))}
         </div>
+      </Section>
+
+      {/* Seam calculator */}
+      <Section>
+        <Reveal>
+          <SectionHead
+            eyebrow="Plan check"
+            title="Type your room. Count the seams."
+            lead="Our fabric is woven up to 5.05 m wide — put your actual room dimensions in and see the plan, then flip to the gypsum equivalent for contrast."
+          />
+          <SeamCalculator />
+        </Reveal>
+      </Section>
+
+      {/* Acoustic demo */}
+      <Section muted>
+        <Reveal>
+          <SectionHead
+            eyebrow="Acoustics"
+            title="Don't read the absorption data. Hear it."
+            lead="One clap, three ceilings. Turn your sound on — the decay you hear uses each material's real reverberation behaviour."
+          />
+          <AcousticDemo />
+        </Reveal>
       </Section>
 
       {/* Certifications */}

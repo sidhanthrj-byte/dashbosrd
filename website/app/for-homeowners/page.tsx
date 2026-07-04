@@ -3,6 +3,8 @@ import Image from "next/image";
 import { Clock3, Sparkles, HeartPulse, Droplets, Paintbrush, BadgeCheck } from "lucide-react";
 import { Section, SectionHead, CTA, Faq } from "@/components/ui";
 import { BacklitDemo } from "@/components/BacklitDemo";
+import { CeilingConfigurator } from "@/components/CeilingConfigurator";
+import { AcousticDemo } from "@/components/AcousticDemo";
 import { EstimateWizard } from "@/components/EstimateWizard";
 import { Reveal } from "@/components/Reveal";
 import { img, homeownerFaqs, testimonials, centers } from "@/lib/data";
@@ -70,10 +72,34 @@ export default function HomeownersPage() {
         </div>
       </Section>
 
+      {/* Ceiling configurator */}
+      <Section muted>
+        <Reveal>
+          <SectionHead
+            eyebrow="Play with it"
+            title="Same room. Five ceilings. You choose."
+            lead="Tap a finish and place it on the ceiling — from flawless matte to a ceiling that is the light."
+          />
+          <CeilingConfigurator />
+        </Reveal>
+      </Section>
+
       {/* Interactive backlit demo */}
       <Section tight>
         <Reveal>
           <BacklitDemo />
+        </Reveal>
+      </Section>
+
+      {/* Acoustic demo */}
+      <Section>
+        <Reveal>
+          <SectionHead
+            eyebrow="For movie nights"
+            title="Hear what a quiet ceiling sounds like."
+            lead="Sound on. One clap — first under POP, then under a DESCOR® Acoustic ceiling."
+          />
+          <AcousticDemo />
         </Reveal>
       </Section>
 
