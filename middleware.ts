@@ -10,6 +10,7 @@ export async function middleware(req: NextRequest) {
   // Skip auth routes and static files
   if (
     pathname.startsWith('/login') ||
+    pathname.startsWith('/catalogue') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico'
