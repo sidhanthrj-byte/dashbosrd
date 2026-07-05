@@ -1,5 +1,13 @@
 import type { Metadata } from 'next';
+import { Space_Grotesk } from 'next/font/google';
 import { Catalogue } from '@/components/catalogue/Catalogue';
+
+const display = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-display',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Relive Events — SFX Machine Catalogue',
@@ -8,5 +16,9 @@ export const metadata: Metadata = {
 };
 
 export default function CataloguePage() {
-  return <Catalogue />;
+  return (
+    <div className={display.variable}>
+      <Catalogue />
+    </div>
+  );
 }

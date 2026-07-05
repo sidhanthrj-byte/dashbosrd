@@ -87,7 +87,17 @@ export function Catalogue() {
         <div className="rl-shell" style={{ position: 'relative', zIndex: 2 }}>
           <span className="rl-eyebrow"><Zap size={13} /> Special Effects · For Event Planners</span>
           <h1>
-            Make the moment <span className="rl-grad">unforgettable</span>
+            Turn the{' '}
+            <span className="rl-rotator" aria-hidden="true">
+              <span>first dance</span>
+              <span>beat drop</span>
+              <span>grand entrance</span>
+              <span>final bow</span>
+              <span>big reveal</span>
+              <span>first dance</span>
+            </span>
+            <br />
+            into something <span className="rl-grad">unforgettable</span>
           </h1>
           <p>
             Sparks, cryo, confetti, flame and dreamy atmosphere — engineered for the beat drop,
@@ -106,6 +116,9 @@ export function Catalogue() {
             <div className="rl-stat"><b>14</b><span>Signature effects</span></div>
             <div className="rl-stat"><b>5</b><span>Effect families</span></div>
             <div className="rl-stat"><b>100%</b><span>Indoor-safe options</span></div>
+          </div>
+          <div className="rl-trusted">
+            <b>Weddings</b> <i /> <b>Festivals</b> <i /> <b>Concerts</b> <i /> <b>Corporate</b> <i /> <b>Nightclubs</b>
           </div>
         </div>
       </header>
