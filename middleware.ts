@@ -7,6 +7,11 @@ const SECRET = new TextEncoder().encode(
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // On the Relive-only deployment, the event app is the whole app:
+  // the root URL opens the control room instead of the CRM login.
+  if (process.env.RELIVE_ROOT === '1' && (pathname === '/' || pathname === '/login')) {
+    return NextResponse.redirect(new URL('/relive', req.url));
+  }
   // Skip auth routes and static files
   if (
     pathname.startsWith('/login') ||
