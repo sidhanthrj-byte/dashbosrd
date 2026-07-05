@@ -1,355 +1,299 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Sparkles, Flame, Snowflake, PartyPopper, Wind, X, Plus, Check,
-  ArrowRight, ArrowDown, Send, ShieldCheck, Play, Star, Trash2, Zap,
-} from 'lucide-react';
 import { toast } from 'sonner';
 import { EffectCanvas } from './EffectCanvas';
-import { categories, machines, type Machine, type Category } from './data';
+import { MachineArt } from './MachineArt';
+import { categories, machines, type Machine } from './data';
 import './catalogue.css';
 
-const catIcon: Record<string, React.ComponentType<{ size?: number }>> = {
-  'cold-spark': Sparkles,
-  cryo: Snowflake,
-  confetti: PartyPopper,
-  'flame-pyro': Flame,
-  atmosphere: Wind,
-};
-
 export function Catalogue() {
-  const [filter, setFilter] = useState<string>('all');
-  const [open, setOpen] = useState<Machine | null>(null);
-  const [replayKey, setReplayKey] = useState(0);
   const [enquiry, setEnquiry] = useState<string[]>([]);
   const [drawer, setDrawer] = useState(false);
+  const [activeCat, setActiveCat] = useState<string>('');
 
-  const inEnquiry = (id: string) => enquiry.includes(id);
-  const toggleEnquiry = (m: Machine) => {
-    setEnquiry((prev) => {
-      if (prev.includes(m.id)) {
-        toast(`${m.name} removed from enquiry`);
-        return prev.filter((x) => x !== m.id);
-      }
-      toast.success(`${m.name} added to your enquiry`);
-      return [...prev, m.id];
-    });
+  const toggle = (m: Machine) => {
+    setEnquiry((prev) =>
+      prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
+    );
+    if (!enquiry.includes(m.id)) toast(`${m.name} added to enquiry`, { duration: 1800 });
   };
 
-  // lock body scroll when an overlay is open
   useEffect(() => {
-    const lock = open || drawer;
-    document.body.style.overflow = lock ? 'hidden' : '';
+    document.body.style.overflow = drawer ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [open, drawer]);
+  }, [drawer]);
 
-  // esc to close
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setOpen(null); setDrawer(false); }
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawer(false); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const visibleCats = useMemo<Category[]>(
-    () => (filter === 'all' ? categories : categories.filter((c) => c.id === filter)),
-    [filter],
+  // scrollspy for family index
+  useEffect(() => {
+    const els = categories
+      .map((c) => document.getElementById(`family-${c.id}`))
+      .filter(Boolean) as HTMLElement[];
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActiveCat(e.target.id.replace('family-', ''));
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px' },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  const selected = useMemo(
+    () => machines.filter((m) => enquiry.includes(m.id)),
+    [enquiry],
   );
 
   return (
-    <div className="rl-root">
-      <div className="rl-ambient" />
-
-      {/* NAV */}
-      <nav className="rl-nav">
-        <div className="rl-shell rl-nav-inner">
-          <div className="rl-brand">
-            <span className="rl-brand-mark"><Sparkles size={17} /></span>
-            <span>
-              Relive Events
-              <small>SFX Catalogue</small>
-            </span>
+    <div className="ct">
+      {/* ---- nav ---- */}
+      <nav className="ct-nav">
+        <div className="ct-wrap ct-nav-in">
+          <span className="ct-wordmark">Relive <em>Events</em></span>
+          <div className="ct-nav-links ct-mono">
+            {categories.map((c) => (
+              <a key={c.id} href={`#family-${c.id}`}>{c.name.split(' ')[0]}</a>
+            ))}
           </div>
-          <button className="rl-nav-cta" onClick={() => setDrawer(true)}>
-            Enquiry
-            {enquiry.length > 0 && <span className="rl-nav-count">{enquiry.length}</span>}
+          <button className="ct-nav-enq ct-mono" onClick={() => setDrawer(true)}>
+            Enquiry{enquiry.length > 0 && <b>{enquiry.length}</b>}
           </button>
         </div>
       </nav>
 
-      {/* HERO */}
-      <header className="rl-hero">
-        <div className="rl-hero-canvas">
-          <EffectCanvas effect="sparks" hue={42} intensity={0.6} className="rl-card-canvas" />
-        </div>
-        <div className="rl-shell" style={{ position: 'relative', zIndex: 2 }}>
-          <span className="rl-eyebrow"><Zap size={13} /> Special Effects · For Event Planners</span>
-          <h1>
-            Turn the{' '}
-            <span className="rl-rotator" aria-hidden="true">
-              <span>first dance</span>
-              <span>beat drop</span>
-              <span>grand entrance</span>
-              <span>final bow</span>
-              <span>big reveal</span>
-              <span>first dance</span>
-            </span>
-            <br />
-            into something <span className="rl-grad">unforgettable</span>
-          </h1>
-          <p>
-            Sparks, cryo, confetti, flame and dreamy atmosphere — engineered for the beat drop,
-            the first dance and the final bow. Tap any machine to watch its effect come alive,
-            then build a shortlist to send our team.
-          </p>
-          <div className="rl-hero-actions">
-            <a className="rl-btn rl-btn-primary" href="#catalogue">
-              Explore the machines <ArrowDown size={16} />
-            </a>
-            <button className="rl-btn rl-btn-ghost" onClick={() => setDrawer(true)}>
-              Start an enquiry <ArrowRight size={16} />
-            </button>
+      {/* ---- hero ---- */}
+      <header className="ct-hero">
+        <div className="ct-wrap">
+          <span className="ct-kicker ct-mono">Special Effects — Technical Catalogue</span>
+          <div className="ct-hero-grid">
+            <div>
+              <h1>Precision effects for<br />live <em>moments.</em></h1>
+              <p className="ct-hero-sub">
+                Fourteen effect systems across five families — cold spark, cryogenic,
+                confetti, flame and atmospheric — specified, installed and operated by
+                our own crew. This catalogue sets out what each system does, what it
+                needs, and where it works best.
+              </p>
+            </div>
+            <aside className="ct-hero-aside">
+              <dl>
+                <dt className="ct-mono">Systems</dt>
+                <dd>14 machines, 5 families</dd>
+                <dt className="ct-mono">Operation</dt>
+                <dd>Crewed, insured, venue-approved</dd>
+                <dt className="ct-mono">Control</dt>
+                <dd>DMX 512 · timecode · manual</dd>
+              </dl>
+            </aside>
           </div>
-          <div className="rl-stats">
-            <div className="rl-stat"><b>14</b><span>Signature effects</span></div>
-            <div className="rl-stat"><b>5</b><span>Effect families</span></div>
-            <div className="rl-stat"><b>100%</b><span>Indoor-safe options</span></div>
-          </div>
-          <div className="rl-trusted">
-            <b>Weddings</b> <i /> <b>Festivals</b> <i /> <b>Concerts</b> <i /> <b>Corporate</b> <i /> <b>Nightclubs</b>
+          <div className="ct-hero-foot ct-mono">
+            <span>Relive Events — SFX Division</span>
+            <span>Edition 2026 · For event planners & producers</span>
           </div>
         </div>
       </header>
 
-      {/* FILTERS */}
-      <div className="rl-filters-wrap" id="catalogue">
-        <div className="rl-shell">
-          <div className="rl-filters">
-            <button
-              className="rl-chip"
-              data-active={filter === 'all'}
-              style={{ ['--rl-hue' as string]: 42 }}
-              onClick={() => setFilter('all')}
-            >
-              <Star size={14} /> All effects
-            </button>
-            {categories.map((c) => {
-              const Icon = catIcon[c.id];
-              return (
-                <button
-                  key={c.id}
-                  className="rl-chip"
-                  data-active={filter === c.id}
-                  style={{ ['--rl-hue' as string]: c.hue }}
-                  onClick={() => setFilter(c.id)}
-                >
-                  <span className="rl-chip-dot" />
-                  <Icon size={14} /> {c.name}
-                </button>
-              );
-            })}
-          </div>
+      {/* ---- family index ---- */}
+      <div className="ct-idx">
+        <div className="ct-wrap ct-idx-in ct-mono">
+          {categories.map((c) => (
+            <a key={c.id} href={`#family-${c.id}`} className={activeCat === c.id ? 'on' : ''}>
+              {c.no}. {c.name}
+            </a>
+          ))}
         </div>
       </div>
 
-      {/* SECTIONS */}
-      <main className="rl-shell rl-section">
-        {visibleCats.map((cat) => {
-          const items = machines.filter((m) => m.categoryId === cat.id);
-          return (
-            <section key={cat.id} style={{ ['--rl-hue' as string]: cat.hue }}>
-              <div className="rl-cat-head">
-                <h2>{cat.name}</h2>
-                <p>{cat.blurb}</p>
-              </div>
-              <div className="rl-grid">
-                {items.map((m, i) => (
-                  <MachineCard
-                    key={m.id}
-                    machine={m}
-                    index={i}
-                    added={inEnquiry(m.id)}
-                    onOpen={() => { setOpen(m); setReplayKey((k) => k + 1); }}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+      {/* ---- catalogue ---- */}
+      <main className="ct-wrap">
+        {categories.map((cat) => (
+          <section key={cat.id} id={`family-${cat.id}`} className="ct-family">
+            <div className="ct-family-head">
+              <span className="no">{cat.no}.</span>
+              <h2>{cat.name}</h2>
+            </div>
+            <p className="ct-family-blurb">{cat.blurb}</p>
+            {machines
+              .filter((m) => m.categoryId === cat.id)
+              .map((m) => (
+                <Entry
+                  key={m.id}
+                  machine={m}
+                  added={enquiry.includes(m.id)}
+                  onToggle={() => toggle(m)}
+                />
+              ))}
+          </section>
+        ))}
+
+        {/* ---- process ---- */}
+        <section className="ct-process">
+          <h2>How we deliver</h2>
+          <div className="ct-process-grid">
+            <div className="ct-step">
+              <span className="ct-mono">01 — Specify</span>
+              <h4>Site survey & compliance</h4>
+              <p>
+                We walk the venue, confirm clearances, detector zones and power, and
+                produce the risk assessment and any permits. You receive one effects
+                plan the venue has already signed off.
+              </p>
+            </div>
+            <div className="ct-step">
+              <span className="ct-mono">02 — Integrate</span>
+              <h4>Programmed to your show</h4>
+              <p>
+                Effects are patched to the lighting desk or timecode and rehearsed
+                against your run sheet — cues land on the beat, the vow, the reveal,
+                not somewhere near it.
+              </p>
+            </div>
+            <div className="ct-step">
+              <span className="ct-mono">03 — Operate</span>
+              <h4>Crewed on the night</h4>
+              <p>
+                Every system arrives with our technicians, who install, fire and
+                strike it. Consumables, cylinders and reloads are managed without a
+                single question reaching you mid-event.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="rl-footer">
-        <div className="rl-shell">
-          <h3>Let’s design your <span className="rl-grad">show-stopping</span> moment</h3>
+      {/* ---- cta ---- */}
+      <section className="ct-cta">
+        <div className="ct-wrap">
+          <h2>Tell us the moment. We&rsquo;ll build the <em>effect.</em></h2>
           <p>
-            Tell us about your event and the effects that caught your eye — our team will handle
-            the rigging, safety, timing and licensing so you can enjoy the show.
+            Shortlist the systems that fit your event and send them across — we
+            respond with availability, a specification and a quote within one
+            working day.
           </p>
-          <div className="rl-hero-actions" style={{ marginTop: 28 }}>
-            <button className="rl-btn rl-btn-primary" onClick={() => setDrawer(true)}>
-              <Send size={16} /> Send an enquiry
-            </button>
-          </div>
-          <div className="rl-footer-meta">
-            Relive Events · Special Effects & Show Production · Effects operated by trained crew
-          </div>
+          <button className="ct-cta-btn" onClick={() => setDrawer(true)}>
+            Start an enquiry
+          </button>
+        </div>
+      </section>
+
+      <footer className="ct-foot">
+        <div className="ct-wrap ct-mono" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <span>© Relive Events — Special Effects</span>
+          <span>All effects crewed & insured</span>
         </div>
       </footer>
 
-      {/* FLOATING ENQUIRY FAB */}
+      {/* ---- shortlist pill ---- */}
       <button
-        className={`rl-fab ${enquiry.length > 0 ? 'rl-show' : ''}`}
+        className={`ct-pill ${enquiry.length === 0 ? 'hide' : ''}`}
         onClick={() => setDrawer(true)}
       >
-        <Send size={16} /> View enquiry
-        <span className="rl-fab-badge">{enquiry.length}</span>
+        Enquiry shortlist<b>{enquiry.length}</b>
       </button>
 
-      {/* MACHINE MODAL */}
-      {open && (
-        <MachineModal
-          machine={open}
-          replayKey={replayKey}
-          added={inEnquiry(open.id)}
-          onReplay={() => setReplayKey((k) => k + 1)}
-          onToggle={() => toggleEnquiry(open)}
-          onClose={() => setOpen(null)}
-        />
-      )}
-
-      {/* ENQUIRY DRAWER */}
+      {/* ---- drawer ---- */}
       {drawer && (
-        <EnquiryDrawer
-          items={machines.filter((m) => enquiry.includes(m.id))}
-          onRemove={(id) => setEnquiry((prev) => prev.filter((x) => x !== id))}
+        <Drawer
+          items={selected}
+          onRemove={(id) => setEnquiry((p) => p.filter((x) => x !== id))}
           onClose={() => setDrawer(false)}
-          onBrowse={() => setDrawer(false)}
         />
       )}
     </div>
   );
 }
 
-/* -------------------- Machine Card -------------------- */
-function MachineCard({
-  machine, index, added, onOpen,
-}: { machine: Machine; index: number; added: boolean; onOpen: () => void }) {
+/* ---------------- catalogue entry ---------------- */
+function Entry({ machine, added, onToggle }: {
+  machine: Machine; added: boolean; onToggle: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [inView, setInView] = useState(false);
+  const [shown, setShown] = useState(false);
+  const [burst, setBurst] = useState(0);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); io.disconnect(); } },
-      { threshold: 0.15 },
+      ([e]) => {
+        setInView(e.isIntersecting);
+        if (e.isIntersecting) setShown(true);
+      },
+      { threshold: 0.25 },
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
   return (
-    <div
-      ref={ref}
-      className={`rl-card ${visible ? 'rl-in' : ''} ${machine.hero ? 'rl-hero-card' : ''}`}
-      style={{ ['--rl-hue' as string]: machine.hue, transitionDelay: `${(index % 3) * 70}ms` }}
-      onClick={onOpen}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
-      <div className="rl-card-visual">
-        <span className="rl-card-badge">{machine.name}</span>
-        {(hover || machine.hero) && (
-          <EffectCanvas
-            effect={machine.effect}
-            hue={machine.hue}
-            playing={hover || machine.hero}
-            intensity={0.5}
-            className="rl-card-canvas"
-          />
-        )}
-        <span className="rl-card-play"><Play size={12} /> See it live</span>
+    <article ref={ref} className={`ct-entry ${shown ? 'in' : ''}`} id={machine.id}>
+      <div className="ct-stage-col">
+        <div className="ct-stage">
+          <div className="ct-art"><MachineArt id={machine.id} /></div>
+          {shown && (
+            <EffectCanvas
+              effect={machine.effect}
+              playing={inView}
+              burstKey={burst}
+              artWidth={240}
+              className="ct-fx"
+            />
+          )}
+        </div>
+        <div className="ct-stage-meta ct-mono">
+          <span>Fig. {machine.index} — {machine.name}</span>
+          <button className="ct-replay" onClick={() => setBurst((b) => b + 1)}>
+            Replay effect
+          </button>
+        </div>
       </div>
-      <div className="rl-card-body">
-        <h3>{machine.name}</h3>
-        <p className="rl-tag">{machine.tagline}</p>
-        <div className="rl-pills">
-          {machine.specs.slice(0, 2).map((s) => (
-            <span key={s.label} className="rl-pill">{s.value}</span>
+
+      <div>
+        <div className="ct-entry-head">
+          <span className="ct-entry-no">{machine.index}</span>
+          <h3>{machine.name}</h3>
+        </div>
+        <p className="ct-entry-tagline ct-mono">{machine.tagline} · {machine.environment}</p>
+        <p className="ct-entry-overview">{machine.overview}</p>
+
+        <dl className="ct-specs">
+          {machine.specs.map((s) => (
+            <div key={s.label} className="ct-spec-row">
+              <dt>{s.label}</dt>
+              <dd>{s.value}</dd>
+            </div>
           ))}
+        </dl>
+
+        <p className="ct-note"><b>In practice — </b>{machine.deployment}</p>
+
+        <div className="ct-entry-foot">
+          <p className="ct-apps ct-mono">
+            For — <span>{machine.applications.join(' · ')}</span>
+            <br />
+            Pairs with — <span>{machine.pairsWith.join(' · ')}</span>
+          </p>
+          <button className={`ct-add ${added ? 'added' : ''}`} onClick={onToggle}>
+            {added ? '✓ On shortlist' : 'Add to enquiry'}
+          </button>
         </div>
       </div>
-      {added && <span className="rl-card-added" />}
-    </div>
+    </article>
   );
 }
 
-/* -------------------- Machine Modal -------------------- */
-function MachineModal({
-  machine, replayKey, added, onReplay, onToggle, onClose,
-}: {
-  machine: Machine; replayKey: number; added: boolean;
-  onReplay: () => void; onToggle: () => void; onClose: () => void;
-}) {
-  const cat = categories.find((c) => c.id === machine.categoryId);
-  return (
-    <div className="rl-modal-scrim" onClick={onClose}>
-      <div
-        className="rl-modal"
-        style={{ ['--rl-hue' as string]: machine.hue }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="rl-modal-stage">
-          <EffectCanvas key={replayKey} effect={machine.effect} hue={machine.hue} className="rl-modal-canvas" />
-          <span className="rl-modal-cat">{cat?.name}</span>
-          <button className="rl-modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
-          <button className="rl-modal-replay" onClick={onReplay}><Play size={13} /> Replay effect</button>
-        </div>
-        <div className="rl-modal-body">
-          <h2>{machine.name}</h2>
-          <p className="rl-tag">{machine.tagline}</p>
-          <p className="rl-desc">{machine.description}</p>
-
-          <div className="rl-spec-grid">
-            {machine.specs.map((s) => (
-              <div key={s.label} className="rl-spec">
-                <span>{s.label}</span>
-                <b>{s.value}</b>
-              </div>
-            ))}
-          </div>
-
-          <div className="rl-block-title">Perfect for</div>
-          <div className="rl-best">
-            {machine.bestFor.map((b) => <span key={b}>{b}</span>)}
-          </div>
-
-          <div className="rl-safety">
-            <ShieldCheck size={18} style={{ flex: '0 0 auto', marginTop: 1 }} />
-            <span>{machine.safety}</span>
-          </div>
-
-          <div className="rl-modal-actions">
-            <button className="rl-btn rl-btn-cat" data-added={added} onClick={onToggle}>
-              {added ? <><Check size={16} /> Added to enquiry</> : <><Plus size={16} /> Add to enquiry</>}
-            </button>
-            <button className="rl-btn rl-btn-ghost" onClick={onClose}>Keep browsing</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------- Enquiry Drawer -------------------- */
-function EnquiryDrawer({
-  items, onRemove, onClose, onBrowse,
-}: {
-  items: Machine[]; onRemove: (id: string) => void; onClose: () => void; onBrowse: () => void;
+/* ---------------- drawer ---------------- */
+function Drawer({ items, onRemove, onClose }: {
+  items: Machine[]; onRemove: (id: string) => void; onClose: () => void;
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -358,88 +302,72 @@ function EnquiryDrawer({
 
   const submit = () => {
     if (!name.trim() || !email.trim()) {
-      toast.error('Please add your name and email so we can reply.');
+      toast('Please add your name and email so we can respond.', { duration: 2400 });
       return;
     }
     const lines = [
-      `New effects enquiry from ${name}`,
-      email ? `Email: ${email}` : '',
+      `Effects enquiry — ${name}`,
+      `Email: ${email}`,
       date ? `Event date: ${date}` : '',
       '',
-      'Effects of interest:',
-      ...items.map((m) => ` • ${m.name} — ${m.tagline}`),
-      items.length === 0 ? ' • (no specific machines selected yet)' : '',
+      'Systems of interest:',
+      ...(items.length
+        ? items.map((m) => `  ${m.index}. ${m.name} — ${m.tagline}`)
+        : ['  (to be discussed)']),
       '',
-      note ? `Notes: ${note}` : '',
+      note ? `Event notes: ${note}` : '',
     ].filter(Boolean);
+    const subject = encodeURIComponent(`SFX enquiry — ${name}`);
     const body = encodeURIComponent(lines.join('\n'));
-    const subject = encodeURIComponent(`SFX Enquiry — ${name}${items.length ? ` (${items.length} effects)` : ''}`);
     window.location.href = `mailto:hello@relive.events?subject=${subject}&body=${body}`;
-    toast.success('Opening your email to send the enquiry…');
   };
 
   return (
     <>
-      <div className="rl-drawer-scrim" onClick={onClose} />
-      <aside className="rl-drawer">
-        <div className="rl-drawer-head">
+      <div className="ct-scrim" onClick={onClose} />
+      <aside className="ct-drawer">
+        <div className="ct-drawer-head">
           <div>
-            <h3>Your enquiry</h3>
-            <p>{items.length} effect{items.length === 1 ? '' : 's'} shortlisted</p>
+            <h3>Enquiry</h3>
+            <span className="ct-mono">
+              {items.length} system{items.length === 1 ? '' : 's'} shortlisted
+            </span>
           </div>
-          <button className="rl-modal-close" style={{ position: 'static' }} onClick={onClose} aria-label="Close">
-            <X size={18} />
-          </button>
+          <button className="ct-x" onClick={onClose} aria-label="Close">×</button>
         </div>
-
-        <div className="rl-drawer-body">
+        <div className="ct-drawer-body">
           {items.length === 0 ? (
-            <div className="rl-empty">
-              <PartyPopper size={30} />
-              <p style={{ marginTop: 12 }}>No effects added yet.<br />Tap “Add to enquiry” on any machine.</p>
-              <button className="rl-btn rl-btn-ghost" style={{ marginTop: 16 }} onClick={onBrowse}>
-                Browse effects
-              </button>
-            </div>
+            <p className="ct-empty">
+              Nothing shortlisted yet — you can still send a general enquiry, or add
+              systems from the catalogue with &ldquo;Add to enquiry&rdquo;.
+            </p>
           ) : (
             items.map((m) => (
-              <div key={m.id} className="rl-enq-item" style={{ ['--rl-hue' as string]: m.hue }}>
-                <div className="rl-enq-swatch" />
-                <div>
-                  <h4>{m.name}</h4>
-                  <small>{m.tagline}</small>
-                </div>
-                <button className="rl-enq-remove" onClick={() => onRemove(m.id)} aria-label="Remove">
-                  <Trash2 size={15} />
-                </button>
+              <div key={m.id} className="ct-enq-row">
+                <span><span className="no">{m.index}</span><span className="nm">{m.name}</span></span>
+                <button className="ct-enq-rm" onClick={() => onRemove(m.id)}>Remove</button>
               </div>
             ))
           )}
-
-          <div style={{ marginTop: 18 }}>
-            <div className="rl-field">
-              <label>Your name *</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Morgan" />
-            </div>
-            <div className="rl-field">
-              <label>Email *</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" type="email" />
-            </div>
-            <div className="rl-field">
-              <label>Event date</label>
-              <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="e.g. 14 Feb 2027" />
-            </div>
-            <div className="rl-field">
-              <label>Tell us about your event</label>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Venue, guest count, the moment you want to elevate…" />
-            </div>
+          <div className="ct-field">
+            <label>Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          </div>
+          <div className="ct-field">
+            <label>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" />
+          </div>
+          <div className="ct-field">
+            <label>Event date</label>
+            <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="If known" />
+          </div>
+          <div className="ct-field">
+            <label>About the event</label>
+            <textarea rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Venue, audience size, the moments you want to build…" />
           </div>
         </div>
-
-        <div className="rl-drawer-foot">
-          <button className="rl-btn rl-btn-primary" onClick={submit}>
-            <Send size={16} /> Send enquiry to Relive Events
-          </button>
+        <div className="ct-drawer-foot">
+          <button className="ct-send" onClick={submit}>Send enquiry</button>
         </div>
       </aside>
     </>
