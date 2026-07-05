@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dashbosrd
+
+A Next.js 16 workspace hosting two independent apps that share the same UI kit:
+
+| App | Route | Purpose |
+| --- | --- | --- |
+| **Pongs CRM** | `/` and `/login` | AI-assisted CRM for stretch-ceiling architect leads (auth-gated). |
+| **Relive Control Room** | `/relive` | Live-operations command center for the event industry. |
+
+The two apps are fully separate — their own routes, API namespaces, database files,
+and theme — so working on one never touches the other.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- CRM: [http://localhost:3000](http://localhost:3000) (redirects to `/login`)
+- Relive Control Room: [http://localhost:3000/relive](http://localhost:3000/relive)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The Relive app is **not** auth-gated (the middleware skips `/relive` and
+`/api/relive`) and seeds a live demo wedding plus a corporate event on first run,
+so it works the moment you open it.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Relive Control Room
 
-## Learn More
+A single command center for running an event as it happens. Deep mallard-green /
+mustard-gold theme, scoped so the CRM's look is unchanged.
 
-To learn more about Next.js, take a look at the following resources:
+**Boards**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Overview** — headline stat tiles, now/next segment, live check-in meter,
+  dietary-plate breakdown, transport snapshot, latest alerts, and the **Aura
+  briefing**.
+- **Run of Show** — day-grouped timeline; start / complete / skip / reopen and
+  add segments.
+- **Guests** — search & filter, one-tap check-in (VIP welcome auto-logged),
+  per-guest profile with pickup assignment and notes, and CSV export.
+- **Transport** — vehicle fleet with capacity meters and **auto-assign** that
+  packs guests into the emptiest vehicles first.
+- **Vendors** — crew roster with status workflow (pending → confirmed → on-site →
+  ready → issue).
+- **Cues & SFX** — a cue stack you arm and fire by department, plus instant SFX
+  with a **safety interlock** that blocks pyro until released.
+- **Alerts** — a live ops feed; every action across the app logs here, and you can
+  post notes at info / warning / critical levels.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Header controls: live global clock, **Broadcast** (simulated guest/VIP/crew
+message), **Go live / Go dark**, and **Panic** (raises a critical alert).
 
-## Deploy on Vercel
+**Aura briefing** reads the whole board and returns a situational summary plus a
+prioritized action list. It uses Claude when `ANTHROPIC_API_KEY` is set and falls
+back to deterministic heuristics otherwise, so it always works.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+> All SFX/pyro triggers are **simulated** — never wire this to real hardware
+> without physical safety interlocks.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Environment variables
+
+All optional — the app runs on local SQLite files with sensible defaults.
+
+| Variable | Used by | Default |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | Aura briefing, CRM next-steps | (heuristic fallback) |
+| `RELIVE_DB_URL` / `RELIVE_DB_AUTH_TOKEN` | Relive Control Room | `file:./relive.db` |
+| `TURSO_URL` / `TURSO_AUTH_TOKEN` | Pongs CRM | `file:./crm.db` |
+| `JWT_SECRET` | CRM auth | dev fallback |
+
+## Tech
+
+Next.js 16 (App Router) · React 19 · Tailwind v4 · base-ui + shadcn components ·
+libSQL (SQLite / Turso) · Anthropic SDK.

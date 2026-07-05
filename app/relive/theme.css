@@ -1,0 +1,53 @@
+/* Relive Control Room theme — scoped so the CRM's look is untouched.
+   Every shadcn token is re-declared under .relive, so the shared ui/
+   components pick up this palette only inside the event app. */
+
+.relive {
+  /* deep mallard green, mustard gold, cream */
+  --background: oklch(0.22 0.03 185);
+  --foreground: oklch(0.94 0.014 95);
+  --card: oklch(0.26 0.032 184);
+  --card-foreground: oklch(0.94 0.014 95);
+  --popover: oklch(0.28 0.033 184);
+  --popover-foreground: oklch(0.94 0.014 95);
+  --primary: oklch(0.76 0.11 82);
+  --primary-foreground: oklch(0.24 0.055 70);
+  --secondary: oklch(0.31 0.033 183);
+  --secondary-foreground: oklch(0.9 0.016 95);
+  --muted: oklch(0.29 0.03 184);
+  --muted-foreground: oklch(0.72 0.024 130);
+  --accent: oklch(0.31 0.033 183);
+  --accent-foreground: oklch(0.92 0.016 95);
+  --destructive: oklch(0.64 0.19 26);
+  --border: oklch(0.34 0.032 183);
+  --input: oklch(0.31 0.032 183);
+  --ring: oklch(0.76 0.11 82);
+  --chart-1: oklch(0.76 0.11 82);
+  --chart-2: oklch(0.7 0.13 155);
+  --chart-3: oklch(0.72 0.09 60);
+  --chart-4: oklch(0.64 0.19 26);
+  --chart-5: oklch(0.66 0.1 210);
+
+  /* status colors — reserved for state, never decoration */
+  --ok: oklch(0.74 0.15 152);
+  --warn: oklch(0.82 0.13 90);
+  --bad: oklch(0.68 0.18 26);
+
+  background:
+    radial-gradient(1100px 500px at 85% -10%, oklch(0.28 0.045 175 / 0.55), transparent 65%),
+    radial-gradient(900px 420px at -10% 110%, oklch(0.25 0.04 200 / 0.45), transparent 60%),
+    linear-gradient(180deg, oklch(0.23 0.032 186), oklch(0.19 0.028 188));
+  color: var(--foreground);
+}
+
+.relive .font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+@keyframes relive-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.relive .live-dot {
+  animation: relive-pulse 1.6s ease-in-out infinite;
+}
