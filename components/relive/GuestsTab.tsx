@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Crown, Download, Plus, Search, UserCheck } from 'lucide-react';
+import { Crown, Download, FileSpreadsheet, Plus, Search, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { fmtAgo } from '@/lib/relive/client';
 import type { Guest } from '@/lib/relive/types';
 import { DIETS } from '@/lib/relive/types';
 import { Card, EmptyState, Field, Modal, NativeSelect, Pill } from './bits';
+import { ImportGuestsModal } from './ImportGuestsModal';
 import type { RoomCtx } from './ControlRoom';
 
 type Filter = 'all' | 'vip' | 'checked_in' | 'not_in' | 'no_pickup';
@@ -19,6 +20,7 @@ export function GuestsTab({ ctx }: { ctx: RoomCtx }) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Guest | null>(null);
 
   const driverName = useMemo(() => new Map(drivers.map((d) => [d.id, d.name])), [drivers]);
@@ -68,6 +70,7 @@ export function GuestsTab({ ctx }: { ctx: RoomCtx }) {
           <Button size="sm" variant="outline" onClick={() => window.open(`/api/relive/events/${ctx.snap.event.id}/guests/export`, '_blank')}>
             <Download data-icon="inline-start" /> CSV
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><FileSpreadsheet data-icon="inline-start" /> Import</Button>
           <Button size="sm" onClick={() => setAddOpen(true)}><Plus data-icon="inline-start" /> Add guest</Button>
         </div>
       }>
@@ -114,6 +117,7 @@ export function GuestsTab({ ctx }: { ctx: RoomCtx }) {
       )}
 
       <AddGuestModal open={addOpen} onClose={() => setAddOpen(false)} ctx={ctx} />
+      <ImportGuestsModal open={importOpen} onClose={() => setImportOpen(false)} ctx={ctx} />
       {selected && <GuestModal guest={guests.find((x) => x.id === selected.id) ?? selected} onClose={() => setSelected(null)} ctx={ctx} />}
     </Card>
   );
