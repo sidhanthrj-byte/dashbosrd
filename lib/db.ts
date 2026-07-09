@@ -77,6 +77,7 @@ export async function initDb(): Promise<void> {
     'ALTER TABLE leads ADD COLUMN archived INTEGER DEFAULT 0',
     'ALTER TABLE leads ADD COLUMN apollo_id TEXT',
     'ALTER TABLE leads ADD COLUMN lookup_attempts INTEGER DEFAULT 0',
+    'ALTER TABLE leads ADD COLUMN phone_type TEXT',
     'CREATE INDEX IF NOT EXISTS idx_leads_user_status ON leads(user_id, status)',
     'CREATE INDEX IF NOT EXISTS idx_leads_user_phone ON leads(user_id, phone_fetched)',
     'CREATE INDEX IF NOT EXISTS idx_leads_user_date ON leads(user_id, next_action_date)',
@@ -217,6 +218,7 @@ export type Lead = {
   linkedin_url: string | null;
   email: string | null;
   phone: string | null;
+  phone_type: string | null;
   phone_fetched: number;
   status: string;
   last_contact_date: string | null;

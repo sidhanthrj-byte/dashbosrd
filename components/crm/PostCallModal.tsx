@@ -54,7 +54,13 @@ export function PostCallModal({ lead, open, onClose, onUpdated }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success('Logged! AI next steps generated.', { icon: '✨' });
+      const followUp = data.lead?.next_action_date;
+      toast.success(
+        followUp
+          ? `Logged! Follow-up reminder set for ${new Date(followUp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+          : 'Logged! AI next steps generated.',
+        { icon: '✨' }
+      );
       onUpdated(data.lead);
       onClose();
       setNotes('');

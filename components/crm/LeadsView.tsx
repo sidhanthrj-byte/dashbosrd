@@ -5,7 +5,7 @@ import { Lead } from '@/lib/db';
 import { LeadCard } from './LeadCard';
 import { StatsBar } from './StatsBar';
 import { STATUS_CONFIG } from '@/lib/next-steps';
-import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2, Phone, PhoneOff, PhoneCall } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Download, Plus, Sparkles, Loader2, Phone, PhoneOff, PhoneCall, FileSpreadsheet } from 'lucide-react';
 import { AddLeadModal } from './AddLeadModal';
 import { FindLeadsModal } from './FindLeadsModal';
 import { toast } from 'sonner';
@@ -37,6 +37,7 @@ export function LeadsView({ onNavigateToday }: Props) {
   const [showFilters, setShowFilters] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
   const [showFindLeads, setShowFindLeads] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [batchLookupRunning, setBatchLookupRunning] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ done: number; total: number; found: number } | null>(null);
   const [notFetchedCount, setNotFetchedCount] = useState<number | null>(null);
@@ -190,18 +191,47 @@ export function LeadsView({ onNavigateToday }: Props) {
     setSearch(''); setStatusFilter('all'); setPriorityFilter('all'); setSort('attention');
   }
 
-  function exportCSV() {
-    const headers = ['Name', 'Company', 'Title', 'City', 'Area', 'Status', 'Phone', 'Email', 'Priority', 'Project Type', 'Deal Value', 'Next Action Date', 'Notes'];
-    const rows = leads.map(l => [
+  async function fetchAllForExport(): Promise<Lead[]> {
+    try {
+      const res = await fetch('/api/leads?limit=1000');
+      const data = await res.json();
+      return Array.isArray(data.leads) && data.leads.length > 0 ? data.leads : leads;
+    } catch { return leads; }
+  }
+
+  function leadRows(all: Lead[]) {
+    const headers = ['Name', 'Company', 'Title', 'City', 'Area', 'Status', 'Phone', 'Phone Type', 'Email', 'Priority', 'Project Type', 'Deal Value', 'Next Action Date', 'Last Contact', 'Notes'];
+    const rows = all.map(l => [
       l.contact_name, l.company_name, l.contact_title, l.city, l.area || '',
-      l.status, l.phone || '', l.email || '', l.priority, l.project_type || '',
-      l.deal_value || '', l.next_action_date || '', (l.notes || '').replace(/,/g, ';'),
+      l.status, l.phone || '', l.phone_type || '', l.email || '', l.priority, l.project_type || '',
+      l.deal_value?.toString() || '', l.next_action_date || '', l.last_contact_date || '',
+      (l.notes || '').replace(/[\t\n]/g, ' '),
     ]);
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    return { headers, rows };
+  }
+
+  async function exportCSV() {
+    const all = await fetchAllForExport();
+    const { headers, rows } = leadRows(all);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = 'pongs-crm-leads.csv';
     a.click();
+    toast.success(`Exported ${all.length} leads as CSV`);
+  }
+
+  async function exportGoogleSheets() {
+    const all = await fetchAllForExport();
+    const { headers, rows } = leadRows(all);
+    const tsv = [headers, ...rows].map(r => r.join('\t')).join('\n');
+    try {
+      await navigator.clipboard.writeText(tsv);
+      window.open('https://sheets.new', '_blank');
+      toast.success(`${all.length} leads copied! Press Ctrl+V (Cmd+V) in the new sheet to paste.`, { duration: 8000 });
+    } catch {
+      toast.error('Could not copy to clipboard — use CSV export instead');
+    }
   }
 
   const hasFilters = !!(search || statusFilter !== 'all' || priorityFilter !== 'all');
@@ -264,10 +294,27 @@ export function LeadsView({ onNavigateToday }: Props) {
               </span>
             )}
           </button>
-          <button onClick={exportCSV} title="Export CSV"
-            className="w-9 h-9 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center shrink-0">
-            <Download className="w-4 h-4" />
-          </button>
+          <div className="relative shrink-0">
+            <button onClick={() => setShowExportMenu(v => !v)} title="Export leads"
+              className="w-9 h-9 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center">
+              <Download className="w-4 h-4" />
+            </button>
+            {showExportMenu && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowExportMenu(false)} />
+                <div className="absolute right-0 top-10 z-40 w-48 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+                  <button onClick={() => { setShowExportMenu(false); exportGoogleSheets(); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors text-left">
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Open in Google Sheets
+                  </button>
+                  <button onClick={() => { setShowExportMenu(false); exportCSV(); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-foreground hover:bg-secondary transition-colors text-left border-t border-border">
+                    <Download className="w-3.5 h-3.5 text-muted-foreground" /> Download CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Phone filter tabs */}

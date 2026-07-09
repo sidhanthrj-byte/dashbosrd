@@ -10,25 +10,98 @@ const CITY_LOCATIONS: Record<string, string> = {
   Hyderabad: 'Hyderabad, Telangana, India',
 };
 
+// Titles that matter to a Pongs salesperson: decision-makers and senior
+// people at architecture / interior design firms — not juniors, not admin.
+const SENIORITY_PRESETS: Record<string, { titles: string[]; seniorities?: string[] }> = {
+  // Owners, principals, heads — the people who approve vendors
+  leadership: {
+    titles: [
+      'Principal Architect', 'Founder', 'Co-Founder', 'Managing Director',
+      'Design Director', 'Director', 'Partner', 'Managing Partner',
+      'Design Head', 'Head of Design', 'Head of Projects', 'Project Head',
+      'Chief Architect', 'Studio Head',
+    ],
+    seniorities: ['owner', 'founder', 'c_suite', 'partner', 'director', 'head'],
+  },
+  // Senior working professionals — specify projects, recommend materials
+  senior: {
+    titles: [
+      'Senior Architect', 'Senior Interior Designer', 'Senior Designer',
+      'Associate Architect', 'Project Architect', 'Project Manager',
+      'Design Manager', 'Lead Designer', 'Studio Manager', 'Associate',
+    ],
+    seniorities: ['senior', 'manager', 'head'],
+  },
+  // Everyone relevant
+  any: {
+    titles: [
+      'Architect', 'Interior Designer', 'Principal Architect', 'Senior Architect',
+      'Senior Interior Designer', 'Design Director', 'Design Head', 'Project Head',
+      'Founder', 'Partner', 'Director', 'Project Manager', 'Design Manager',
+    ],
+  },
+};
+
+const ORG_TAGS = ['architecture', 'interior design', 'design studio', 'architectural services'];
+
+// Known localities per city — used to auto-tag a lead's area from the firm's street address
+const CITY_AREAS: Record<string, string[]> = {
+  Mumbai:    ['Bandra', 'Juhu', 'Khar', 'Andheri', 'Lower Parel', 'Worli', 'Powai', 'Goregaon', 'Malad', 'Navi Mumbai', 'Santa Cruz', 'Vile Parle', 'Dadar', 'Colaba', 'Fort', 'Chembur', 'Borivali', 'Thane'],
+  Bangalore: ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR Layout', 'Jayanagar', 'BTM Layout', 'Yelahanka', 'Rajajinagar', 'Malleswaram', 'JP Nagar', 'Basavanagudi', 'Sadashivanagar', 'RT Nagar', 'Hebbal', 'Sarjapur', 'Bellandur', 'Marathahalli', 'MG Road', 'Richmond', 'Frazer Town', 'Banashankari', 'Electronic City'],
+  Chennai:   ['Adyar', 'Anna Nagar', 'OMR', 'Velachery', 'T Nagar', 'Nungambakkam', 'Mylapore', 'Besant Nagar', 'Kilpauk', 'Egmore', 'Guindy', 'Porur', 'ECR'],
+  Pune:      ['Koregaon Park', 'Baner', 'Kothrud', 'Viman Nagar', 'Hinjawadi', 'Wakad', 'Aundh', 'Kalyani Nagar', 'Camp', 'Deccan', 'Hadapsar', 'Balewadi'],
+  Hyderabad: ['Banjara Hills', 'Jubilee Hills', 'Gachibowli', 'Madhapur', 'Kondapur', 'Hitech City', 'Kukatpally', 'Begumpet', 'Ameerpet', 'Secunderabad'],
+};
+
+function detectArea(city: string, ...texts: (string | null | undefined)[]): string | null {
+  const areas = CITY_AREAS[city] || [];
+  const haystack = texts.filter(Boolean).join(' ').toLowerCase();
+  if (!haystack) return null;
+  for (const a of areas) {
+    if (haystack.includes(a.toLowerCase())) return a;
+  }
+  return null;
+}
+
 function tierFromTitle(title: string): string {
   const t = (title || '').toLowerCase();
-  if (t.includes('principal') || t.includes('founder') || t.includes('director') || t.includes('managing') || t.includes('chief') || t.includes('partner')) return 'high';
-  if (t.includes('senior') || t.includes('associate') || t.includes('head') || t.includes('lead')) return 'medium';
+  if (t.includes('principal') || t.includes('founder') || t.includes('director') || t.includes('managing') || t.includes('chief') || t.includes('partner') || t.includes('head')) return 'high';
+  if (t.includes('senior') || t.includes('associate') || t.includes('lead') || t.includes('manager')) return 'medium';
   return 'low';
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ApolloPerson = Record<string, any>;
 
-function formatPerson(p: ApolloPerson) {
+// Extract the best phone, PREFERRING the person's own mobile over office landlines.
+function extractPhone(p: ApolloPerson): { phone: string | null; phoneType: string | null } {
   const phones = p.phone_numbers || [];
   const mobile = phones.find((ph: { type: string }) => ph.type === 'mobile');
-  const work = phones.find((ph: { type: string }) => ph.type === 'work');
-  const best = mobile || work || phones[0];
+  const home = phones.find((ph: { type: string }) => ph.type === 'home');
+  const work = phones.find((ph: { type: string }) => ph.type === 'work_hq' || ph.type === 'work');
+  const other = phones.find((ph: { type: string }) => ph.type === 'other');
+
+  if (mobile?.sanitized_number || mobile?.raw_number) {
+    return { phone: mobile.sanitized_number || mobile.raw_number, phoneType: 'mobile' };
+  }
+  if (home?.sanitized_number || home?.raw_number) {
+    return { phone: home.sanitized_number || home.raw_number, phoneType: 'personal' };
+  }
+  if (other?.sanitized_number || other?.raw_number) {
+    return { phone: other.sanitized_number || other.raw_number, phoneType: 'personal' };
+  }
+  if (work?.sanitized_number || work?.raw_number) {
+    return { phone: work.sanitized_number || work.raw_number, phoneType: 'work' };
+  }
   const orgPhone = p.organization?.primary_phone;
-  const phone = best?.sanitized_number || best?.raw_number
-    || orgPhone?.sanitized_number || orgPhone?.number
-    || p.organization?.phone || p.sanitized_phone || null;
+  const office = orgPhone?.sanitized_number || orgPhone?.number || p.organization?.phone || p.sanitized_phone || null;
+  return office ? { phone: office, phoneType: 'office' } : { phone: null, phoneType: null };
+}
+
+function formatPerson(p: ApolloPerson) {
+  const { phone, phoneType } = extractPhone(p);
+  const hasDirectDial = p.has_direct_phone === 'Yes'
+    || (p.phone_numbers || []).some((ph: { type: string }) => ph.type === 'mobile');
 
   return {
     id: p.id,
@@ -38,12 +111,13 @@ function formatPerson(p: ApolloPerson) {
     title: p.title || '',
     email: p.email || null,
     phone,
-    has_direct_phone: p.has_direct_phone || (phones.length > 0 ? 'Yes' : 'No'),
+    phone_type: phoneType,
+    has_direct_phone: hasDirectDial ? 'Yes' : (p.has_direct_phone || 'No'),
     linkedin_url: p.linkedin_url || null,
     organization: {
       name: p.organization?.name || p.employment_history?.[0]?.organization_name || '',
       website_url: p.organization?.website_url || null,
-      primary_phone: orgPhone?.sanitized_number || orgPhone?.number || null,
+      primary_phone: p.organization?.primary_phone?.sanitized_number || p.organization?.primary_phone?.number || null,
     },
     city: p.city || p.organization?.city || '',
     state: p.state || p.organization?.state || '',
@@ -57,9 +131,8 @@ export async function POST(req: NextRequest) {
   const apolloKey = process.env.APOLLO_API_KEY;
   if (!apolloKey) return NextResponse.json({ error: 'Apollo API key not configured' }, { status: 500 });
 
-  // Read body once
   const body = await req.json().catch(() => ({}));
-  const { keywords, company, title, linkedinUrl, area, page = 1, addPerson } = body;
+  const { keywords, company, linkedinUrl, area, seniority = 'any', page = 1, perPage = 25, addPerson } = body;
 
   // ── Add a specific Apollo person as a lead ─────────────────────────────────
   if (addPerson) {
@@ -68,7 +141,7 @@ export async function POST(req: NextRequest) {
     const city = session.city;
     let p = addPerson as ApolloPerson;
 
-    // Enrich via people/match to get real name + org phone (api_search obfuscates last names)
+    // Enrich via people/match to get real name + phone (api_search obfuscates last names)
     if (p.id) {
       try {
         const matchRes = await fetch('https://api.apollo.io/api/v1/people/match', {
@@ -91,21 +164,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Insufficient person data' }, { status: 400 });
     }
 
-    const phone = formatted.phone;
+    // Avoid duplicates by apollo_id
+    if (p.id) {
+      const existing = await query<{ id: number }>(
+        'SELECT id FROM leads WHERE user_id = ? AND apollo_id = ? AND (archived = 0 OR archived IS NULL)',
+        [userId, p.id]
+      );
+      if (existing.length > 0) {
+        return NextResponse.json({ error: 'Already in your CRM', duplicate: true }, { status: 409 });
+      }
+    }
+
+    // Auto-detect area from the firm's street address, falling back to a user-supplied tag
+    const autoArea = detectArea(city,
+      p.organization?.street_address, p.organization?.raw_address,
+      p.street_address, p.present_raw_address, companyName)
+      || body.addArea || null;
+
     const result = await run(
-      `INSERT INTO leads (company_name, contact_name, contact_title, city, state, linkedin_url, email, phone, phone_fetched, priority, project_type, batch_number, status, user_id, apollo_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'new', ?, ?)`,
+      `INSERT INTO leads (company_name, contact_name, contact_title, city, state, area, linkedin_url, email, phone, phone_type, phone_fetched, priority, project_type, batch_number, status, user_id, apollo_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'new', ?, ?)`,
       [companyName, contactName, formatted.title || 'Architect', city, formatted.state || '',
-       formatted.linkedin_url, formatted.email, phone, phone ? 1 : 0,
-       tierFromTitle(formatted.title || ''), null, userId, p.id || null]
+       autoArea, formatted.linkedin_url, formatted.email, formatted.phone, formatted.phone_type,
+       formatted.phone ? 1 : 0, tierFromTitle(formatted.title || ''), null, userId, p.id || null]
     );
     const rows = await query('SELECT * FROM leads WHERE id = ?', [result.lastInsertRowid]);
     return NextResponse.json({ lead: rows[0] }, { status: 201 });
   }
 
-  // ── Search Apollo ──────────────────────────────────────────────────────────
-
-  // LinkedIn URL — use people/match directly for precision
+  // ── LinkedIn URL — people/match directly for precision ────────────────────
   if (linkedinUrl) {
     const matchRes = await fetch('https://api.apollo.io/api/v1/people/match', {
       method: 'POST',
@@ -115,37 +202,33 @@ export async function POST(req: NextRequest) {
     });
     if (matchRes.ok) {
       const d = await matchRes.json();
-      const p = d?.person;
-      if (p) {
-        // Get org phone via match by ID
-        const formatted = formatPerson(p);
-        return NextResponse.json({ people: [formatted], total: 1 });
-      }
+      if (d?.person) return NextResponse.json({ people: [formatPerson(d.person)], total: 1 });
     }
     return NextResponse.json({ people: [], total: 0 });
   }
 
-  const searchBody: Record<string, unknown> = { per_page: 10, page };
-
-  // Always lock to user's city
+  // ── Search Apollo ──────────────────────────────────────────────────────────
+  const preset = SENIORITY_PRESETS[seniority] || SENIORITY_PRESETS.any;
   const cityLocation = CITY_LOCATIONS[session.city] || session.city;
-  searchBody.person_locations = [cityLocation];
 
-  // Always enforce profession — this CRM is for architects & interior designers
-  searchBody.person_titles = title ? [title] : [
-    'Architect', 'Principal Architect', 'Senior Architect', 'Associate Architect',
-    'Interior Designer', 'Interior Architect', 'Design Director', 'Design Manager',
-    'Studio Manager', 'Head of Design', 'Head of Projects',
-    'Founder', 'Partner', 'Principal',
-  ];
-  searchBody.q_organization_keyword_tags = ['architecture', 'interior design', 'design studio', 'construction'];
+  const searchBody: Record<string, unknown> = {
+    per_page: Math.min(perPage, 50),
+    page,
+    person_locations: [cityLocation],
+    person_titles: preset.titles,
+    q_organization_keyword_tags: ORG_TAGS,
+  };
+  if (preset.seniorities) searchBody.person_seniorities = preset.seniorities;
 
-  // Area narrows via keyword (sub-area name appears in org address/bio)
-  // Person name / custom keywords override area
+  // NOTE: Apollo cannot filter by sub-city area — the area param is used only
+  // as a tag when adding leads (see addPerson). Search is city-wide.
+  void area;
   if (keywords) searchBody.q_keywords = keywords;
-  else if (area) searchBody.q_keywords = area;
-
-  if (company) searchBody.q_organization_name = company;
+  if (company) {
+    searchBody.q_organization_name = company;
+    // When targeting a specific firm, drop the org-tag constraint (firm name is enough)
+    delete searchBody.q_organization_keyword_tags;
+  }
 
   const apolloRes = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
     method: 'POST',
@@ -164,24 +247,29 @@ export async function POST(req: NextRequest) {
   const people: ApolloPerson[] = data?.people || [];
   const formatted = people.map(formatPerson);
 
-  // For name searches, enrich top result with people/match to get org phone
-  if (keywords && people.length > 0 && people[0]?.id) {
-    try {
-      const matchRes = await fetch('https://api.apollo.io/api/v1/people/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Api-Key': apolloKey },
-        body: JSON.stringify({ id: people[0].id, reveal_personal_emails: true }),
-        signal: AbortSignal.timeout(8000),
-      });
-      if (matchRes.ok) {
-        const d = await matchRes.json();
-        if (d?.person) formatted[0] = formatPerson(d.person);
-      }
-    } catch { /* enrichment is best-effort */ }
+  // People with a direct (personal) phone first — that's who you can actually call
+  formatted.sort((a, b) => {
+    const aDirect = a.has_direct_phone === 'Yes' ? 1 : 0;
+    const bDirect = b.has_direct_phone === 'Yes' ? 1 : 0;
+    return bDirect - aDirect;
+  });
+
+  // Skip leads already in the CRM
+  await initDb();
+  const ids = formatted.map(f => f.id).filter(Boolean);
+  let existingIds = new Set<string>();
+  if (ids.length > 0) {
+    const placeholders = ids.map(() => '?').join(',');
+    const existing = await query<{ apollo_id: string }>(
+      `SELECT apollo_id FROM leads WHERE user_id = ? AND apollo_id IN (${placeholders}) AND (archived = 0 OR archived IS NULL)`,
+      [session.userId, ...ids]
+    );
+    existingIds = new Set(existing.map(e => e.apollo_id));
   }
+  const withDupFlag = formatted.map(f => ({ ...f, already_added: existingIds.has(f.id) }));
 
   return NextResponse.json({
-    people: formatted,
+    people: withDupFlag,
     total: data?.pagination?.total_entries || people.length,
     page: data?.pagination?.page || page,
   });

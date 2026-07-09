@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Lead } from '@/lib/db';
-import { Phone, PhoneCall, PhoneOff, CheckCircle2, Clock, ChevronDown, ChevronUp, Loader2, RefreshCw, Search, Sparkles } from 'lucide-react';
+import { Phone, PhoneCall, PhoneOff, CheckCircle2, Clock, ChevronDown, ChevronUp, Loader2, RefreshCw, Search, Sparkles, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { PostCallModal } from './PostCallModal';
 import { FindLeadsModal } from './FindLeadsModal';
 import { STATUS_CONFIG } from '@/lib/next-steps';
+import { getWhatsAppUrl } from '@/lib/whatsapp';
 
 type Section = 'due' | 'all_phone';
 
@@ -72,18 +73,36 @@ function CallCard({ lead, onUpdated, isOverdue }: { lead: Lead; onUpdated: (l: L
           </span>
         </div>
 
-        {/* Phone number — big and tappable */}
-        <a
-          href={`tel:${lead.phone}`}
-          className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-xl hover:bg-emerald-500/20 active:scale-[0.98] transition-all"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="w-7 h-7 bg-emerald-500/20 rounded-lg flex items-center justify-center shrink-0">
-            <Phone className="w-3.5 h-3.5 text-emerald-400" />
-          </div>
-          <span className="text-sm font-bold text-emerald-400 tracking-wide flex-1">{lead.phone}</span>
-          <PhoneCall className="w-4 h-4 text-emerald-400/60" />
-        </a>
+        {/* Phone number — big and tappable, with WhatsApp beside it */}
+        <div className="flex gap-1.5">
+          <a
+            href={`tel:${lead.phone}`}
+            className="flex items-center gap-2.5 flex-1 px-3.5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-xl hover:bg-emerald-500/20 active:scale-[0.98] transition-all"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-7 h-7 bg-emerald-500/20 rounded-lg flex items-center justify-center shrink-0">
+              <Phone className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+            <span className="text-sm font-bold text-emerald-400 tracking-wide flex-1">
+              {lead.phone}
+              {lead.phone_type && (
+                <span className={`text-[8px] font-bold uppercase px-1 py-0.5 rounded ml-1.5 align-middle ${lead.phone_type === 'mobile' || lead.phone_type === 'personal' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-zinc-500/20 text-zinc-400'}`}>
+                  {lead.phone_type === 'mobile' || lead.phone_type === 'personal' ? 'PERSONAL' : 'OFFICE'}
+                </span>
+              )}
+            </span>
+            <PhoneCall className="w-4 h-4 text-emerald-400/60" />
+          </a>
+          <a
+            href={getWhatsAppUrl(lead.phone || '', lead.contact_name, lead.company_name, lead.status, lead.project_type)}
+            target="_blank" rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="flex items-center justify-center w-12 bg-green-600/15 border border-green-500/25 rounded-xl text-green-400 hover:bg-green-600/30 active:scale-[0.96] transition-all"
+            title="WhatsApp"
+          >
+            <MessageCircle className="w-4.5 h-4.5" />
+          </a>
+        </div>
 
         {/* Quick action buttons */}
         <div className="flex gap-1.5">

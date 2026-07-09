@@ -258,9 +258,15 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
       return (
         <div className="flex items-center gap-1 shrink-0">
           <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()}
+            title={`Call ${lead.phone}${lead.phone_type ? ` (${lead.phone_type})` : ''}`}
             className="flex items-center gap-1 h-9 px-2 bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 rounded-l-xl text-[11px] font-bold max-w-[80px] truncate">
             <Phone className="w-3 h-3 shrink-0" />
             <span className="truncate">{lead.phone}</span>
+          </a>
+          <a href={waUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+            title="WhatsApp"
+            className="h-9 px-1.5 flex items-center bg-green-600/15 border-y border-emerald-500/30 text-green-400 hover:bg-green-600/30 transition-colors shrink-0">
+            <MessageCircle className="w-3.5 h-3.5" />
           </a>
           <button onClick={copyPhone}
             title="Copy number"
@@ -421,6 +427,11 @@ export function LeadCard({ lead: initialLead, onUpdate, onReplace, compact = fal
                 <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()}
                   className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1.5 hover:bg-emerald-500/20 transition-colors">
                   <Phone className="w-3 h-3" /> {lead.phone}
+                  {lead.phone_type && (
+                    <span className={`text-[8px] font-bold uppercase px-1 py-0.5 rounded ${lead.phone_type === 'mobile' || lead.phone_type === 'personal' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-zinc-500/20 text-zinc-400'}`}>
+                      {lead.phone_type === 'mobile' || lead.phone_type === 'personal' ? 'PERSONAL' : 'OFFICE'}
+                    </span>
+                  )}
                 </a>
               )}
 
